@@ -13,11 +13,12 @@
  */
 
 import "./style.css";
-
-import { fromEvent, interval, merge } from "rxjs";
+import { fromEvent, interval, merge, Observable } from "rxjs";
 import { map, filter, scan } from "rxjs/operators";
 
 /** Constants */
+
+const IMPLEMENT_THIS: any = undefined;
 
 const Viewport = {
   CANVAS_WIDTH: 200,
@@ -44,15 +45,57 @@ type Key = "KeyS" | "KeyA" | "KeyD";
 type Event = "keydown" | "keyup" | "keypress";
 
 /** Utility functions */
+/**
+ * A random number generator which provides two pure functions
+ * `hash` and `scaleToRange`.  Call `hash` repeatedly to generate the
+ * sequence of hashes.
+ */
+abstract class RNG {
+  // LCG using GCC's constants
+  private static m = 0x80000000; // 2**31
+  private static a = 1103515245;
+  private static c = 12345;
+
+  /**
+   * Call `hash` repeatedly to generate the sequence of hashes.
+   * @param seed 
+   * @returns a hash of the seed
+   */
+  public static hash = (seed: number) => (RNG.a * seed + RNG.c) % RNG.m;
+
+  /**
+h    * Takes hash value and scales it to the range [-1, 1]
+   */
+  public static scale = (hash: number) => (2 * hash) / (RNG.m - 1) - 1;
+}
+
+function createRngStreamFromSource<T>(source$: Observable<T>) {
+  return function createRngStream(seed: number): Observable<number> {
+    const randomNumberStream = source$.pipe(
+      scan((acc, _) => RNG.hash(acc), seed),
+      map(RNG.scale),
+      map((v) => (v + 1) / 2)
+    );
+    return randomNumberStream;
+  };
+}
+
+/** Types */
+type BlockPosition = { xPos: number; yPos: number };
+
 
 /** State processing */
 
 type State = Readonly<{
   gameEnd: boolean;
+  movingShapePosition: BlockPosition;
+  fixedBlocks: ReadonlyArray<BlockPosition>;
 }>;
 
 const initialState: State = {
   gameEnd: false,
+  movingShapePosition: { xPos: 3, yPos: 0 },
+  fixedBlocks: [],
 } as const;
 
 /**
@@ -61,7 +104,38 @@ const initialState: State = {
  * @param s Current state
  * @returns Updated state
  */
-const tick = (s: State) => s;
+const tick = (s: State) => {
+  const newY = s.movingShapePosition.yPos + 1;
+
+  if (isCollision(s.movingShapePosition.xPos, newY, s.fixedBlocks)) {
+    // Block hits bottom of the grid or another block, save previous block position
+    const newFixedBlocks = [...s.fixedBlocks, s.movingShapePosition];
+
+    // Generate a new shape position
+    const newShapePosition = { xPos: Math.floor(Math.random() * Constants.GRID_WIDTH), yPos: 0 };
+
+    return {
+      ...s,
+      movingShapePosition: newShapePosition,
+      fixedBlocks: newFixedBlocks,
+    };
+  }
+
+  // Move the shape down on each tick
+  return {
+    ...s,
+    movingShapePosition: { ...s.movingShapePosition, yPos: newY },
+  };
+};
+
+// Collision detection function
+const isCollision = (x: number, y: number, fixedBlocks: ReadonlyArray<BlockPosition>): boolean => {
+  // Check if the next position is out of bounds or occupied by a block
+  return (
+    y >= Constants.GRID_HEIGHT ||
+    fixedBlocks.some(({ xPos, yPos }) => xPos === x && yPos === y)
+  );
+};
 
 /** Rendering (side effects) */
 
@@ -151,44 +225,71 @@ export function main() {
    */
   const render = (s: State) => {
     // Add blocks to the main grid canvas
-    const cube = createSvgElement(svg.namespaceURI, "rect", {
+    // const cube = createSvgElement(svg.namespaceURI, "rect", {
+    //   height: `${Block.HEIGHT}`,
+    //   width: `${Block.WIDTH}`,
+    //   x: "0",
+    //   y: "0",
+    //   style: "fill: green",
+    // });
+    // svg.appendChild(cube);
+
+    svg.innerHTML = '';
+
+    // Render fixed blocks
+    s.fixedBlocks.forEach(({ xPos, yPos }) => {
+      const block = createSvgElement(svg.namespaceURI, 'rect', {
+        height: `${Block.HEIGHT}`,
+        width: `${Block.WIDTH}`,
+        x: `${Block.WIDTH * xPos}`,
+        y: `${Block.HEIGHT * yPos}`,
+        style: 'fill: green', // Color for fixed blocks
+      });
+      svg.appendChild(block);
+    });
+
+    // Render the moving shape
+    const { xPos, yPos } = s.movingShapePosition;
+    const cube = createSvgElement(svg.namespaceURI, 'rect', {
       height: `${Block.HEIGHT}`,
       width: `${Block.WIDTH}`,
-      x: "0",
-      y: "0",
-      style: "fill: green",
+      x: `${Block.WIDTH * xPos}`,
+      y: `${Block.HEIGHT * yPos}`,
+      style: 'fill: pink', // Color for the moving shape
     });
     svg.appendChild(cube);
-    const cube2 = createSvgElement(svg.namespaceURI, "rect", {
-      height: `${Block.HEIGHT}`,
-      width: `${Block.WIDTH}`,
-      x: `${Block.WIDTH * (3 - 1)}`,
-      y: `${Block.HEIGHT * (20 - 1)}`,
-      style: "fill: red",
-    });
-    svg.appendChild(cube2);
-    const cube3 = createSvgElement(svg.namespaceURI, "rect", {
-      height: `${Block.HEIGHT}`,
-      width: `${Block.WIDTH}`,
-      x: `${Block.WIDTH * (4 - 1)}`,
-      y: `${Block.HEIGHT * (20 - 1)}`,
-      style: "fill: red",
-    });
-    svg.appendChild(cube3);
+
+    // const cube2 = createSvgElement(svg.namespaceURI, "rect", {
+    //   height: `${Block.HEIGHT}`,
+    //   width: `${Block.WIDTH}`,
+    //   x: `${Block.WIDTH * (3 - 1)}`,
+    //   y: `${Block.HEIGHT * (20 - 1)}`,
+    //   style: "fill: red",
+    // });
+    // svg.appendChild(cube2);
+    // const cube3 = createSvgElement(svg.namespaceURI, "rect", {
+    //   height: `${Block.HEIGHT}`,
+    //   width: `${Block.WIDTH}`,
+    //   x: `${Block.WIDTH * (4 - 1)}`,
+    //   y: `${Block.HEIGHT * (20 - 1)}`,
+    //   style: "fill: red",
+    // });
+    // svg.appendChild(cube3);
 
     // Add a block to the preview canvas
-    const cubePreview = createSvgElement(preview.namespaceURI, "rect", {
-      height: `${Block.HEIGHT}`,
-      width: `${Block.WIDTH}`,
-      x: `${Block.WIDTH * 2}`,
-      y: `${Block.HEIGHT}`,
-      style: "fill: green",
-    });
-    preview.appendChild(cubePreview);
+    // const cubePreview = createSvgElement(preview.namespaceURI, "rect", {
+    //   height: `${Block.HEIGHT}`,
+    //   width: `${Block.WIDTH}`,
+    //   x: `${Block.WIDTH * 2}`,
+    //   y: `${Block.HEIGHT}`,
+    //   style: "fill: green",
+    // });
+    // preview.appendChild(cubePreview);
   };
 
   const source$ = merge(tick$)
-    .pipe(scan((s: State) => ({ gameEnd: true }), initialState))
+    .pipe(scan(tick, initialState),
+    map((s) => (s.gameEnd ? initialState : s)))
     .subscribe((s: State) => {
       render(s);
 
