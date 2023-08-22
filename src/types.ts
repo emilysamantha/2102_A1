@@ -1,7 +1,7 @@
-export {IMPLEMENT_THIS, Viewport, Constants, Block, Move}
+export {IMPLEMENT_THIS, Viewport, Constants, Block, Move, Rotate}
 export type {BlockPosition, State, Key, Event }
 
-/** Constants */
+// Constants
 const IMPLEMENT_THIS: any = undefined;
 
 const Viewport = {
@@ -22,21 +22,33 @@ const Block = {
   HEIGHT: Viewport.CANVAS_HEIGHT / Constants.GRID_HEIGHT,
 };
 
-type BlockPosition = { xPos: number; yPos: number };
+// Types
+type BlockPosition = Readonly<{ xPos: number; yPos: number }>;
+
+type Shape = Readonly<{
+  positions: ReadonlyArray<BlockPosition>;
+  color: string;
+}>
 
 type State = Readonly<{
-  gameEnd: boolean; // To end the game
-  movingShapePosition: BlockPosition; // To render the moving shape
-  fixedBlocks: ReadonlyArray<BlockPosition>; // To render blocks
-  blockFilled: ReadonlyArray<ReadonlyArray<Boolean>>; // For collision detection
+  gameEnd: boolean;                                     // To end the game
+  movingShapePosition: BlockPosition;                   // To render the moving shape
+  fixedBlocks: ReadonlyArray<BlockPosition>;            // To render blocks
+  blockFilled: ReadonlyArray<ReadonlyArray<Boolean>>;   // For collision detection
 }>;
 
-/** User input */
 type Key = "KeyS" | "KeyA" | "KeyD";
 type Event = "keydown" | "keyup" | "keypress";
 
-/** Action types */
-// TODO: Complete the action types
+// Action Types
 class Move {
   constructor(public readonly direction: number) {}
+}
+
+class Tick {
+  constructor(public readonly elapsed: number) {}
+}
+
+class Rotate {
+  constructor() {}
 }

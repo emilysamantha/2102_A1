@@ -1,6 +1,6 @@
 export { initialState }
 
-import { Constants, State } from "./types";
+import { Constants, Move, State } from "./types";
 
 
 const initialState: State = {
@@ -12,3 +12,7 @@ const initialState: State = {
     ),
   } as const;
 
+  const reduceState: (s: State, action: Move) => State = (s, action) => 
+  action.direction === 1
+    ? { ...s, movingShapePosition: { ...s.movingShapePosition, xPos: s.movingShapePosition.xPos + 1 } }
+    : { ...s, movingShapePosition: { ...s.movingShapePosition, xPos: s.movingShapePosition.xPos - 1 } };
