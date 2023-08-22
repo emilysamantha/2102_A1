@@ -15,88 +15,21 @@
 import "./style.css";
 import { fromEvent, interval, merge, Observable } from "rxjs";
 import { map, filter, scan } from "rxjs/operators";
-
-/** Constants */
-
-const IMPLEMENT_THIS: any = undefined;
-
-const Viewport = {
-  CANVAS_WIDTH: 200,
-  CANVAS_HEIGHT: 400,
-  PREVIEW_WIDTH: 160,
-  PREVIEW_HEIGHT: 80,
-} as const;
-
-const Constants = {
-  TICK_RATE_MS: 500,
-  GRID_WIDTH: 10,
-  GRID_HEIGHT: 20,
-} as const;
-
-const Block = {
-  WIDTH: Viewport.CANVAS_WIDTH / Constants.GRID_WIDTH,
-  HEIGHT: Viewport.CANVAS_HEIGHT / Constants.GRID_HEIGHT,
-};
-
-/** User input */
-
-type Key = "KeyS" | "KeyA" | "KeyD";
-
-type Event = "keydown" | "keyup" | "keypress";
-
-/** Utility functions */
-/**
- * A random number generator which provides two pure functions
- * `hash` and `scaleToRange`.  Call `hash` repeatedly to generate the
- * sequence of hashes.
- */
-abstract class RNG {
-  // LCG using GCC's constants
-  private static m = 0x80000000; // 2**31
-  private static a = 1103515245;
-  private static c = 12345;
-
-  /**
-   * Call `hash` repeatedly to generate the sequence of hashes.
-   * @param seed 
-   * @returns a hash of the seed
-   */
-  public static hash = (seed: number) => (RNG.a * seed + RNG.c) % RNG.m;
-
-  /**
-h    * Takes hash value and scales it to the range [-1, 1]
-   */
-  public static scale = (hash: number) => (2 * hash) / (RNG.m - 1) - 1;
-}
+import { Constants, Viewport, Key, Block, BlockPosition, State } from "./types";
+import { RNG } from "./util";
+import { initialState } from "./state";
+import { createSvgElement, hide, show } from "./view";
 
 function createRngStreamFromSource<T>(source$: Observable<T>) {
   return function createRngStream(seed: number): Observable<number> {
     const randomNumberStream = source$.pipe(
       scan((acc, _) => RNG.hash(acc), seed),
       map(RNG.scale),
-      map((v) => (v + 1) / 2)
+      map((v) => ((v + 1) / 2) * Constants.GRID_WIDTH)
     );
     return randomNumberStream;
   };
 }
-
-/** Types */
-type BlockPosition = { xPos: number; yPos: number };
-
-
-/** State processing */
-
-type State = Readonly<{
-  gameEnd: boolean;
-  movingShapePosition: BlockPosition;
-  fixedBlocks: ReadonlyArray<BlockPosition>;
-}>;
-
-const initialState: State = {
-  gameEnd: false,
-  movingShapePosition: { xPos: 3, yPos: 0 },
-  fixedBlocks: [],
-} as const;
 
 /**
  * Updates the state by proceeding with one time step.
@@ -105,19 +38,39 @@ const initialState: State = {
  * @returns Updated state
  */
 const tick = (s: State) => {
+  // 1. Move the shape down
   const newY = s.movingShapePosition.yPos + 1;
+  const x = s.movingShapePosition.xPos;
 
-  if (isCollision(s.movingShapePosition.xPos, newY, s.fixedBlocks)) {
-    // Block hits bottom of the grid or another block, save previous block position
-    const newFixedBlocks = [...s.fixedBlocks, s.movingShapePosition];
+  // - Check for collision
+  if (isCollision(x, newY, s.blockFilled)) {
+    const newFixedBlocks = [...s.fixedBlocks, s.movingShapePosition]; // TODO: Filter the y position of the fixed blocks to remove the filled rows
+    const newBlockFilled = [
+      ...s.blockFilled.slice(0, newY - 1),
+      [
+        ...s.blockFilled[newY - 1].slice(0, x),
+        true,
+        ...s.blockFilled[newY - 1].slice(x + 1),
+      ],
+      ...s.blockFilled.slice(newY),
+    ];
 
-    // Generate a new shape position
-    const newShapePosition = { xPos: Math.floor(Math.random() * Constants.GRID_WIDTH), yPos: 0 };
+    // - Generate a new shape position
+    const newShapePosition = {
+      xPos: Math.floor(Math.random() * Constants.GRID_WIDTH),
+      yPos: 0,
+    };
+
+    // - Check for filled rows
+    // > Reset blockFilled with filled rows to false
+
+    // > Move all blocks all the way down -> update blockFilled and fixedBlocks
 
     return {
       ...s,
       movingShapePosition: newShapePosition,
       fixedBlocks: newFixedBlocks,
+      blockFilled: newBlockFilled,
     };
   }
 
@@ -129,51 +82,22 @@ const tick = (s: State) => {
 };
 
 // Collision detection function
-const isCollision = (x: number, y: number, fixedBlocks: ReadonlyArray<BlockPosition>): boolean => {
-  // Check if the next position is out of bounds or occupied by a block
+const isCollision = (
+  x: number,
+  y: number,
+  blockFilled: ReadonlyArray<ReadonlyArray<Boolean>>
+) => {
   return (
+    // Checks if the shape is at the bottom of the grid or collides with a fixed block
     y >= Constants.GRID_HEIGHT ||
-    fixedBlocks.some(({ xPos, yPos }) => xPos === x && yPos === y)
+    // fixedBlocks.some(({ xPos, yPos }) => xPos === x && yPos === y)
+    blockFilled[y][x]
   );
 };
 
-/** Rendering (side effects) */
-
-/**
- * Displays a SVG element on the canvas. Brings to foreground.
- * @param elem SVG element to display
- */
-const show = (elem: SVGGraphicsElement) => {
-  elem.setAttribute("visibility", "visible");
-  elem.parentNode!.appendChild(elem);
-};
-
-/**
- * Hides a SVG element on the canvas.
- * @param elem SVG element to hide
- */
-const hide = (elem: SVGGraphicsElement) =>
-  elem.setAttribute("visibility", "hidden");
-
-/**
- * Creates an SVG element with the given properties.
- *
- * See https://developer.mozilla.org/en-US/docs/Web/SVG/Element for valid
- * element names and properties.
- *
- * @param namespace Namespace of the SVG element
- * @param name SVGElement name
- * @param props Properties to set on the SVG element
- * @returns SVG element
- */
-const createSvgElement = (
-  namespace: string | null,
-  name: string,
-  props: Record<string, string> = {}
-) => {
-  const elem = document.createElementNS(namespace, name) as SVGElement;
-  Object.entries(props).forEach(([k, v]) => elem.setAttribute(k, v));
-  return elem;
+// Filled row detection function
+const isRowFilled = (row: ReadonlyArray<Boolean>) => {
+  return row.filter((bool) => bool).length === Constants.GRID_WIDTH;
 };
 
 /**
@@ -207,6 +131,7 @@ export function main() {
   const fromKey = (keyCode: Key) =>
     key$.pipe(filter(({ code }) => code === keyCode));
 
+  // TODO: Implement moving the shape left, right, and down
   const left$ = fromKey("KeyA");
   const right$ = fromKey("KeyD");
   const down$ = fromKey("KeyS");
@@ -234,28 +159,29 @@ export function main() {
     // });
     // svg.appendChild(cube);
 
-    svg.innerHTML = '';
+    svg.innerHTML = "";
 
     // Render fixed blocks
     s.fixedBlocks.forEach(({ xPos, yPos }) => {
-      const block = createSvgElement(svg.namespaceURI, 'rect', {
+      const block = createSvgElement(svg.namespaceURI, "rect", {
         height: `${Block.HEIGHT}`,
         width: `${Block.WIDTH}`,
         x: `${Block.WIDTH * xPos}`,
         y: `${Block.HEIGHT * yPos}`,
-        style: 'fill: green', // Color for fixed blocks
+        style: "fill: green", // Color for fixed blocks
       });
       svg.appendChild(block);
     });
+    // s.blockFilled.forEach((row) => row.filter((bool) => bool).map())
 
     // Render the moving shape
     const { xPos, yPos } = s.movingShapePosition;
-    const cube = createSvgElement(svg.namespaceURI, 'rect', {
+    const cube = createSvgElement(svg.namespaceURI, "rect", {
       height: `${Block.HEIGHT}`,
       width: `${Block.WIDTH}`,
       x: `${Block.WIDTH * xPos}`,
       y: `${Block.HEIGHT * yPos}`,
-      style: 'fill: pink', // Color for the moving shape
+      style: "fill: pink", // Color for the moving shape
     });
     svg.appendChild(cube);
 
@@ -288,8 +214,10 @@ export function main() {
   };
 
   const source$ = merge(tick$)
-    .pipe(scan(tick, initialState),
-    map((s) => (s.gameEnd ? initialState : s)))
+    .pipe(
+      scan(tick, initialState),
+      map((s) => (s.gameEnd ? initialState : s))
+    )
     .subscribe((s: State) => {
       render(s);
 
