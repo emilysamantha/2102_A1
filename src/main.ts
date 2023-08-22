@@ -66,16 +66,47 @@ function main() {
     svg.innerHTML = "";
 
     // Render fixed blocks
-    s.fixedBlocks.forEach(({ xPos, yPos }) => {
-      const block = createSvgElement(svg.namespaceURI, "rect", {
-        height: `${Block.HEIGHT}`,
-        width: `${Block.WIDTH}`,
-        x: `${Block.WIDTH * xPos}`,
-        y: `${Block.HEIGHT * yPos}`,
-        style: "fill: green", // Color for fixed blocks
-      });
-      svg.appendChild(block);
-    });
+    // s.blockFilled.forEach((row, y) =>
+    //   row
+    //     .filter((bool, x) => bool)
+    //     .map((_, x) => ({ xPos: x, yPos: y }))
+    //     .forEach(({ xPos, yPos }) => {
+    //       const block = createSvgElement(svg.namespaceURI, "rect", {
+    //         height: `${Block.HEIGHT}`,
+    //         width: `${Block.WIDTH}`,
+    //         x: `${Block.WIDTH * xPos}`,
+    //         y: `${Block.HEIGHT * yPos}`,
+    //         style: "fill: green", // Color for fixed blocks
+    //       });
+    //       svg.appendChild(block);
+    //     })
+    // );
+
+    s.blockFilled.forEach((row, y) =>
+      row.forEach((bool, x) => {
+        if (bool) {
+          const block = createSvgElement(svg.namespaceURI, "rect", {
+            height: `${Block.HEIGHT}`,
+            width: `${Block.WIDTH}`,
+            x: `${Block.WIDTH * x}`,
+            y: `${Block.HEIGHT * y}`,
+            style: "fill: green", // Color for fixed blocks
+          });
+          svg.appendChild(block);
+        }
+      })
+    );
+
+    // s.fixedBlocks.forEach(({ xPos, yPos }) => {
+    //   const block = createSvgElement(svg.namespaceURI, "rect", {
+    //     height: `${Block.HEIGHT}`,
+    //     width: `${Block.WIDTH}`,
+    //     x: `${Block.WIDTH * xPos}`,
+    //     y: `${Block.HEIGHT * yPos}`,
+    //     style: "fill: green", // Color for fixed blocks
+    //   });
+    //   svg.appendChild(block);
+    // });
 
     // Render the moving shape
     const { xPos, yPos } = s.movingShapePosition;
@@ -135,8 +166,8 @@ const reduceState: (s: State, action: Move | Rotate | number) => State = (
   action
 ) =>
   action instanceof Move
-    // Move right
-    ? action.direction === 1
+    ? // Move right
+      action.direction === 1
       ? {
           ...s,
           movingShapePosition: {
@@ -144,22 +175,34 @@ const reduceState: (s: State, action: Move | Rotate | number) => State = (
             xPos: s.movingShapePosition.xPos + 1,
           },
         }
-      :
-      // Move left 
-      {
+      : // Move left
+        {
           ...s,
           movingShapePosition: {
             ...s.movingShapePosition,
             xPos: s.movingShapePosition.xPos - 1,
           },
         }
-    // Rotate
-    : action instanceof Rotate
+    : // Rotate
+    action instanceof Rotate
     ? {
         ...s,
         // TODO: Rotate the shape, once shape is implemented
       }
     : tick(s);
+
+// Function to check if a position is a collision
+const isCollision = (
+  pos: BlockPosition,
+  blockFilled: ReadonlyArray<ReadonlyArray<Boolean>>
+) => {
+  return (
+    // Checks if the shape is at the bottom of the grid or collides with a fixed block
+    pos.yPos >= Constants.GRID_HEIGHT ||
+    // fixedBlocks.some(({ xPos, yPos }) => xPos === x && yPos === y)
+    blockFilled[pos.yPos][pos.xPos]
+  );
+};
 
 // Function to move the shape down
 const moveShapeDown = (s: State) => {
@@ -168,7 +211,8 @@ const moveShapeDown = (s: State) => {
   const x = s.movingShapePosition.xPos;
 
   // If moving shape collides with a fixed block or the bottom of the grid
-  if (isCollision(x, newY, s.blockFilled)) {
+  if (isCollision({ xPos: x, yPos: newY }, s.blockFilled)) {
+    // Update the fixed blocks and blockFilled arrays
     const newFixedBlocks = [...s.fixedBlocks, s.movingShapePosition];
     const newBlockFilled = [
       ...s.blockFilled.slice(0, newY - 1),
@@ -180,11 +224,19 @@ const moveShapeDown = (s: State) => {
       ...s.blockFilled.slice(newY),
     ];
 
+    // Generate a new shape position
+    const newShapePosition = {
+      xPos: Math.floor(Math.random() * Constants.GRID_WIDTH),
+      // xPos: s.movingShapePosition.xPos + 1,
+      yPos: 0,
+    };
+
     return {
       ...s,
       fixedBlocks: newFixedBlocks,
       blockFilled: newBlockFilled,
-    }
+      movingShapePosition: newShapePosition,
+    };
   }
 
   // Else if the moving shape can move down without colliding
@@ -192,7 +244,26 @@ const moveShapeDown = (s: State) => {
     ...s,
     movingShapePosition: { ...s.movingShapePosition, yPos: newY },
   };
-}
+};
+
+// Function to check if a row is filled
+const isRowFilled = (row: ReadonlyArray<Boolean>) => {
+  return row.filter((bool) => bool).length === Constants.GRID_WIDTH;
+};
+
+const handleFilledRows = (s: State) => {
+  // Return the state with filled rows removed from the blockFilled array
+  return {
+    ...s,
+    blockFilled: s.blockFilled.reduce(
+      (acc, row) =>
+        isRowFilled(row)
+          ? [...acc, Array.from({ length: Constants.GRID_WIDTH }, () => false)]
+          : [...acc, row],
+      [] as ReadonlyArray<ReadonlyArray<Boolean>>
+    ),
+  };
+};
 
 /**
  * Updates the state by proceeding with one time step.
@@ -201,26 +272,7 @@ const moveShapeDown = (s: State) => {
  * @returns Updated state
  */
 const tick = (s: State) => {
-  return moveShapeDown(s);
-};
-
-// Collision detection function
-const isCollision = (
-  x: number,
-  y: number,
-  blockFilled: ReadonlyArray<ReadonlyArray<Boolean>>
-) => {
-  return (
-    // Checks if the shape is at the bottom of the grid or collides with a fixed block
-    y >= Constants.GRID_HEIGHT ||
-    // fixedBlocks.some(({ xPos, yPos }) => xPos === x && yPos === y)
-    blockFilled[y][x]
-  );
-};
-
-// Filled row detection function
-const isRowFilled = (row: ReadonlyArray<Boolean>) => {
-  return row.filter((bool) => bool).length === Constants.GRID_WIDTH;
+  return handleFilledRows(moveShapeDown(s));
 };
 
 function createRngStreamFromSource<T>(source$: Observable<T>) {
