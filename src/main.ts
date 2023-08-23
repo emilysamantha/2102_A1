@@ -25,6 +25,7 @@ import {
   Move,
   IMPLEMENT_THIS,
   Rotate,
+  NewShape,
 } from "./types";
 import { RNG } from "./util";
 import { initialState, reduceState, tick } from "./state";
@@ -120,12 +121,12 @@ function main() {
     key$.pipe(filter(({ code }) => code === keyCode));
   const left$ = fromKey("KeyA").pipe(map(() => new Move(-1)));
   const right$ = fromKey("KeyD").pipe(map(() => new Move(1)));
-  const rotate$ = fromKey("KeyS").pipe(map(() => IMPLEMENT_THIS));
+  const rotate$ = fromKey("KeyS").pipe(map(() => new Rotate()));
 
-  const xRandom$ = createRngStreamFromSource(gameClock$)(234);
+  const xRandom$ = createRngStreamFromSource(gameClock$)(new Date().getTime());  // FIXME: Replace with a random seed and replace stream with a stream that emits when the shape is at the bottom of the grid
 
   // Merge all streams
-  const source$ = merge(gameClock$, left$, right$, rotate$)
+  const source$ = merge(left$, right$, rotate$, xRandom$)
     .pipe(
       scan(reduceState, initialState),
       map((s) => (s.gameEnd ? initialState : s))
@@ -146,7 +147,7 @@ function createRngStreamFromSource<T>(source$: Observable<T>) {
     const randomNumberStream = source$.pipe(
       scan((acc, _) => RNG.hash(acc), seed),
       map(RNG.scale),
-      map((v) => ((v + 1) / 2) * Constants.GRID_WIDTH)
+      map((v) => Math.floor(((v + 1) / 2) * Constants.GRID_WIDTH))
     );
     return randomNumberStream;
   };

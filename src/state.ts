@@ -1,6 +1,6 @@
 export { initialState, reduceState, tick };
 
-import { BlockPosition, Constants, Move, Rotate, State } from "./types";
+import { BlockPosition, Constants, Move, NewShape, Rotate, State } from "./types";
 
 const initialState: State = {
   gameEnd: false,
@@ -50,7 +50,8 @@ const reduceState: (s: State, action: Move | Rotate | number) => State = (
         ...s,
         // TODO: Rotate the shape, once shape is implemented
       }
-    : tick(s);
+    :
+    tick(s, action);
 
 // Function to check if a position is a collision
 const isCollision = (
@@ -60,13 +61,12 @@ const isCollision = (
   return (
     // Checks if the shape is at the bottom of the grid or collides with a fixed block
     pos.yPos >= Constants.GRID_HEIGHT ||
-    // fixedBlocks.some(({ xPos, yPos }) => xPos === x && yPos === y)
     blockFilled[pos.yPos][pos.xPos]
   );
 };
 
 // Function to move the shape down
-const moveShapeDown = (s: State) => {
+const moveShapeDown = (s: State, randomX: number) => {
   // Move the moving shape down
   const newY = s.movingShapePosition.yPos + 1;
   const x = s.movingShapePosition.xPos;
@@ -86,8 +86,7 @@ const moveShapeDown = (s: State) => {
 
     // Generate a new shape position
     const newShapePosition = {
-      xPos: Math.floor(Math.random() * Constants.GRID_WIDTH),
-      // xPos: s.movingShapePosition.xPos + 1,
+      xPos: randomX,
       yPos: 0,
     };
 
@@ -139,6 +138,6 @@ const handleFilledRows = (s: State) => {
  * @param s Current state
  * @returns Updated state
  */
-const tick = (s: State) => {
-  return moveShapeDown(s);
+const tick = (s: State, randomX: number) => {
+  return moveShapeDown(s, randomX);
 };

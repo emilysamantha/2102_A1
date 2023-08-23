@@ -1,4 +1,4 @@
-export {IMPLEMENT_THIS, Viewport, Constants, Block, Move, Rotate}
+export {IMPLEMENT_THIS, Viewport, Constants, Block, Move, Rotate, NewShape}
 export type {BlockPosition, State, Key, Event }
 
 // Constants
@@ -53,4 +53,8 @@ class Tick {
 
 class Rotate {
   constructor() {}
+}
+
+class NewShape {
+  constructor(public readonly x: number) {}
 }
