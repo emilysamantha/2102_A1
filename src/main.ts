@@ -27,7 +27,7 @@ import {
   Rotate,
 } from "./types";
 import { RNG } from "./util";
-import { initialState } from "./state";
+import { initialState, tick } from "./state";
 import { createSvgElement, hide, show } from "./view";
 
 /**
@@ -65,8 +65,13 @@ function main() {
     // Reset the canvas
     svg.innerHTML = "";
 
+    // Update the level
+
     // Update the score
     scoreText.innerHTML = `${s.currScore}`;
+
+    // Update the high score
+    highScoreText.innerHTML = `${s.highScore}`;
 
     // Render blocks
     s.blockFilled.forEach((row, y) =>
@@ -134,128 +139,6 @@ function main() {
       }
     });
 }
-
-////////////////////////////// Move this to state.ts //////////////////////////////
-// State transducer
-const reduceState: (s: State, action: Move | Rotate | number) => State = (
-  s,
-  action
-) =>
-  action instanceof Move
-    ? // Move right
-      action.direction === 1
-      ? {
-          ...s,
-          movingShapePosition: {
-            ...s.movingShapePosition,
-            xPos: s.movingShapePosition.xPos + 1,
-          },
-        }
-      : // Move left
-        {
-          ...s,
-          movingShapePosition: {
-            ...s.movingShapePosition,
-            xPos: s.movingShapePosition.xPos - 1,
-          },
-        }
-    : // Rotate
-    action instanceof Rotate
-    ? {
-        ...s,
-        // TODO: Rotate the shape, once shape is implemented
-      }
-    : tick(s);
-
-// Function to check if a position is a collision
-const isCollision = (
-  pos: BlockPosition,
-  blockFilled: ReadonlyArray<ReadonlyArray<Boolean>>
-) => {
-  return (
-    // Checks if the shape is at the bottom of the grid or collides with a fixed block
-    pos.yPos >= Constants.GRID_HEIGHT ||
-    // fixedBlocks.some(({ xPos, yPos }) => xPos === x && yPos === y)
-    blockFilled[pos.yPos][pos.xPos]
-  );
-};
-
-// Function to move the shape down
-const moveShapeDown = (s: State) => {
-  // Move the moving shape down
-  const newY = s.movingShapePosition.yPos + 1;
-  const x = s.movingShapePosition.xPos;
-
-  // If moving shape collides with a fixed block or the bottom of the grid
-  if (isCollision({ xPos: x, yPos: newY }, s.blockFilled)) {
-    // Update the fixed blocks and blockFilled arrays
-    const newBlockFilled = [
-      ...s.blockFilled.slice(0, newY - 1),
-      [
-        ...s.blockFilled[newY - 1].slice(0, x),
-        true,
-        ...s.blockFilled[newY - 1].slice(x + 1),
-      ],
-      ...s.blockFilled.slice(newY),
-    ];
-
-    // Generate a new shape position
-    const newShapePosition = {
-      xPos: Math.floor(Math.random() * Constants.GRID_WIDTH),
-      // xPos: s.movingShapePosition.xPos + 1,
-      yPos: 0,
-    };
-
-    return handleFilledRows({
-      ...s,
-      blockFilled: newBlockFilled,
-      movingShapePosition: newShapePosition,
-    });
-  }
-
-  // Else if the moving shape can move down without colliding
-  return {
-    ...s,
-    movingShapePosition: { ...s.movingShapePosition, yPos: newY },
-  };
-};
-
-// Function to check if a row is filled
-const isRowFilled = (row: ReadonlyArray<Boolean>) => {
-  return row.filter((bool) => bool).length === Constants.GRID_WIDTH;
-};
-
-// Function to handle filled rows
-const handleFilledRows = (s: State) => {
-  // Return the state with filled rows removed from the blockFilled array
-  // TODO: increment score
-  return {
-    ...s,
-    // TODO: check filled rows and update score
-    currScore: s.blockFilled.reduce(
-      (acc, row) => (isRowFilled(row) ? acc + Constants.GRID_WIDTH : acc), s.currScore,
-    ),
-    blockFilled: s.blockFilled.reduce(
-      (acc, row) =>
-        isRowFilled(row)
-        // Create a new row of false at the top of the grid, shifting the rest of the rows down
-          ? [Array.from({ length: Constants.GRID_WIDTH }, () => false), ...acc]
-          // Keep the row as is
-          : [...acc, row],
-      [] as ReadonlyArray<ReadonlyArray<Boolean>>
-    ),
-  };
-};
-
-/**
- * Updates the state by proceeding with one time step.
- *
- * @param s Current state
- * @returns Updated state
- */
-const tick = (s: State) => {
-  return moveShapeDown(s);
-};
 
 function createRngStreamFromSource<T>(source$: Observable<T>) {
   return function createRngStream(seed: number): Observable<number> {

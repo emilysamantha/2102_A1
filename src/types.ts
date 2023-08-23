@@ -33,6 +33,8 @@ type Shape = Readonly<{
 type State = Readonly<{
   gameEnd: boolean;                                     // To end the game
   currScore: number;                                    // To keep track of the score
+  highScore: number;                                    // To keep track of the high score
+  level: number;                                        // To keep track of the level
   movingShapePosition: BlockPosition;                   // To render the moving shape
   blockFilled: ReadonlyArray<ReadonlyArray<Boolean>>;   // For collision detection
 }>;
