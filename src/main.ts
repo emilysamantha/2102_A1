@@ -65,23 +65,7 @@ function main() {
     // Reset the canvas
     svg.innerHTML = "";
 
-    // Render fixed blocks
-    // s.blockFilled.forEach((row, y) =>
-    //   row
-    //     .filter((bool, x) => bool)
-    //     .map((_, x) => ({ xPos: x, yPos: y }))
-    //     .forEach(({ xPos, yPos }) => {
-    //       const block = createSvgElement(svg.namespaceURI, "rect", {
-    //         height: `${Block.HEIGHT}`,
-    //         width: `${Block.WIDTH}`,
-    //         x: `${Block.WIDTH * xPos}`,
-    //         y: `${Block.HEIGHT * yPos}`,
-    //         style: "fill: green", // Color for fixed blocks
-    //       });
-    //       svg.appendChild(block);
-    //     })
-    // );
-
+    // Render blocks
     s.blockFilled.forEach((row, y) =>
       row.forEach((bool, x) => {
         if (bool) {
@@ -96,17 +80,6 @@ function main() {
         }
       })
     );
-
-    // s.fixedBlocks.forEach(({ xPos, yPos }) => {
-    //   const block = createSvgElement(svg.namespaceURI, "rect", {
-    //     height: `${Block.HEIGHT}`,
-    //     width: `${Block.WIDTH}`,
-    //     x: `${Block.WIDTH * xPos}`,
-    //     y: `${Block.HEIGHT * yPos}`,
-    //     style: "fill: green", // Color for fixed blocks
-    //   });
-    //   svg.appendChild(block);
-    // });
 
     // Render the moving shape
     const { xPos, yPos } = s.movingShapePosition;
@@ -213,7 +186,6 @@ const moveShapeDown = (s: State) => {
   // If moving shape collides with a fixed block or the bottom of the grid
   if (isCollision({ xPos: x, yPos: newY }, s.blockFilled)) {
     // Update the fixed blocks and blockFilled arrays
-    const newFixedBlocks = [...s.fixedBlocks, s.movingShapePosition];
     const newBlockFilled = [
       ...s.blockFilled.slice(0, newY - 1),
       [
@@ -233,7 +205,6 @@ const moveShapeDown = (s: State) => {
 
     return {
       ...s,
-      fixedBlocks: newFixedBlocks,
       blockFilled: newBlockFilled,
       movingShapePosition: newShapePosition,
     };
@@ -251,8 +222,11 @@ const isRowFilled = (row: ReadonlyArray<Boolean>) => {
   return row.filter((bool) => bool).length === Constants.GRID_WIDTH;
 };
 
+// Function to handle filled rows
 const handleFilledRows = (s: State) => {
   // Return the state with filled rows removed from the blockFilled array
+  // TODO: increment score
+  // TODO: shift fixed blocks down (cut the filled rows and add a new row at the top)
   return {
     ...s,
     blockFilled: s.blockFilled.reduce(
