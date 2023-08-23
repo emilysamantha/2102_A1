@@ -1,18 +1,17 @@
-export { initialState, reduceState, tick }
+export { initialState, reduceState, tick };
 
 import { BlockPosition, Constants, Move, Rotate, State } from "./types";
 
-
 const initialState: State = {
-    gameEnd: false,
-    currScore: 0,
-    highScore: 0,
-    level: 0,
-    movingShapePosition: { xPos: 0, yPos: 0 }, // TODO: Replace with random position
-    blockFilled: Array.from({ length: Constants.GRID_HEIGHT }, () =>
-      Array(Constants.GRID_WIDTH).fill(false)
-    ),
-  } as const;
+  gameEnd: false,
+  currScore: 0,
+  highScore: 0,
+  level: 0,
+  movingShapePosition: { xPos: 0, yPos: 0 }, // TODO: Replace with random position
+  blockFilled: Array.from({ length: Constants.GRID_HEIGHT }, () =>
+    Array(Constants.GRID_WIDTH).fill(false)
+  ),
+} as const;
 
 // State transducer
 const reduceState: (s: State, action: Move | Rotate | number) => State = (
@@ -26,7 +25,11 @@ const reduceState: (s: State, action: Move | Rotate | number) => State = (
           ...s,
           movingShapePosition: {
             ...s.movingShapePosition,
-            xPos: s.movingShapePosition.xPos + 1,
+            xPos:
+              // If the shape is at the right edge of the grid, do not move
+              s.movingShapePosition.xPos + 1 >= Constants.GRID_WIDTH
+                ? Constants.GRID_WIDTH - 1
+                : s.movingShapePosition.xPos + 1,
           },
         }
       : // Move left
@@ -34,7 +37,11 @@ const reduceState: (s: State, action: Move | Rotate | number) => State = (
           ...s,
           movingShapePosition: {
             ...s.movingShapePosition,
-            xPos: s.movingShapePosition.xPos - 1,
+            xPos:
+              // If the shape is at the left edge of the grid, do not move
+              s.movingShapePosition.xPos - 1 < 0
+                ? 0
+                : s.movingShapePosition.xPos - 1,
           },
         }
     : // Rotate
@@ -109,17 +116,18 @@ const handleFilledRows = (s: State) => {
   return {
     ...s,
     currScore: s.blockFilled.reduce(
-      (acc, row) => (isRowFilled(row) ? acc + Constants.GRID_WIDTH : acc), s.currScore,
+      (acc, row) => (isRowFilled(row) ? acc + Constants.GRID_WIDTH : acc),
+      s.currScore
     ),
     // FIXME: High score updates in the next tick
     highScore: s.currScore > s.highScore ? s.currScore : s.highScore,
     blockFilled: s.blockFilled.reduce(
       (acc, row) =>
         isRowFilled(row)
-        // Create a new row of false at the top of the grid, shifting the rest of the rows down
-          ? [Array.from({ length: Constants.GRID_WIDTH }, () => false), ...acc]
-          // Keep the row as is
-          : [...acc, row],
+          ? // Create a new row of false at the top of the grid, shifting the rest of the rows down
+            [Array.from({ length: Constants.GRID_WIDTH }, () => false), ...acc]
+          : // Keep the row as is
+            [...acc, row],
       [] as ReadonlyArray<ReadonlyArray<Boolean>>
     ),
   };
