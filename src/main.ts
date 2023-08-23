@@ -232,7 +232,7 @@ const handleFilledRows = (s: State) => {
     blockFilled: s.blockFilled.reduce(
       (acc, row) =>
         isRowFilled(row)
-          ? [...acc, Array.from({ length: Constants.GRID_WIDTH }, () => false)]
+          ? [Array.from({ length: Constants.GRID_WIDTH }, () => false), ...acc]
           : [...acc, row],
       [] as ReadonlyArray<ReadonlyArray<Boolean>>
     ),
