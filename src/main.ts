@@ -65,6 +65,9 @@ function main() {
     // Reset the canvas
     svg.innerHTML = "";
 
+    // Update the score
+    scoreText.innerHTML = `${s.currScore}`;
+
     // Render blocks
     s.blockFilled.forEach((row, y) =>
       row.forEach((bool, x) => {
@@ -203,11 +206,11 @@ const moveShapeDown = (s: State) => {
       yPos: 0,
     };
 
-    return {
+    return handleFilledRows({
       ...s,
       blockFilled: newBlockFilled,
       movingShapePosition: newShapePosition,
-    };
+    });
   }
 
   // Else if the moving shape can move down without colliding
@@ -226,13 +229,18 @@ const isRowFilled = (row: ReadonlyArray<Boolean>) => {
 const handleFilledRows = (s: State) => {
   // Return the state with filled rows removed from the blockFilled array
   // TODO: increment score
-  // TODO: shift fixed blocks down (cut the filled rows and add a new row at the top)
   return {
     ...s,
+    // TODO: check filled rows and update score
+    currScore: s.blockFilled.reduce(
+      (acc, row) => (isRowFilled(row) ? acc + Constants.GRID_WIDTH : acc), s.currScore,
+    ),
     blockFilled: s.blockFilled.reduce(
       (acc, row) =>
         isRowFilled(row)
+        // Create a new row of false at the top of the grid, shifting the rest of the rows down
           ? [Array.from({ length: Constants.GRID_WIDTH }, () => false), ...acc]
+          // Keep the row as is
           : [...acc, row],
       [] as ReadonlyArray<ReadonlyArray<Boolean>>
     ),
@@ -246,7 +254,7 @@ const handleFilledRows = (s: State) => {
  * @returns Updated state
  */
 const tick = (s: State) => {
-  return handleFilledRows(moveShapeDown(s));
+  return moveShapeDown(s);
 };
 
 function createRngStreamFromSource<T>(source$: Observable<T>) {
