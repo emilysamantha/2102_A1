@@ -1,4 +1,4 @@
-export { initialState, tick }
+export { initialState, reduceState, tick }
 
 import { BlockPosition, Constants, Move, Rotate, State } from "./types";
 

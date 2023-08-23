@@ -27,7 +27,7 @@ import {
   Rotate,
 } from "./types";
 import { RNG } from "./util";
-import { initialState, tick } from "./state";
+import { initialState, reduceState, tick } from "./state";
 import { createSvgElement, hide, show } from "./view";
 
 /**
@@ -66,6 +66,7 @@ function main() {
     svg.innerHTML = "";
 
     // Update the level
+    levelText.innerHTML = `${s.level}`;
 
     // Update the score
     scoreText.innerHTML = `${s.currScore}`;
@@ -82,7 +83,7 @@ function main() {
             width: `${Block.WIDTH}`,
             x: `${Block.WIDTH * x}`,
             y: `${Block.HEIGHT * y}`,
-            style: "fill: green", // Color for fixed blocks
+            style: "fill: green", // Color for fixed blocks, TODO: stick to the shape's color
           });
           svg.appendChild(block);
         }
@@ -126,7 +127,7 @@ function main() {
   // Merge all streams
   const source$ = merge(gameClock$, left$, right$, rotate$)
     .pipe(
-      scan(tick, initialState),
+      scan(reduceState, initialState),
       map((s) => (s.gameEnd ? initialState : s))
     )
     .subscribe((s: State) => {
