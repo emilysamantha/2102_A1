@@ -27,8 +27,10 @@ const reduceState: (s: State, action: Move | Rotate | number) => State = (
             ...s.movingShapePosition,
             xPos:
               // If the shape is at the right edge of the grid, do not move
-              s.movingShapePosition.xPos + 1 >= Constants.GRID_WIDTH
-                ? Constants.GRID_WIDTH - 1
+              s.movingShapePosition.xPos + 1 >= Constants.GRID_WIDTH ||
+              // or if moving the shape to the right collides with a fixed block, do not move
+              isCollision({xPos: s.movingShapePosition.xPos + 1, yPos: s.movingShapePosition.yPos}, s.blockFilled)
+                ? s.movingShapePosition.xPos
                 : s.movingShapePosition.xPos + 1,
           },
         }
@@ -39,8 +41,10 @@ const reduceState: (s: State, action: Move | Rotate | number) => State = (
             ...s.movingShapePosition,
             xPos:
               // If the shape is at the left edge of the grid, do not move
-              s.movingShapePosition.xPos - 1 < 0
-                ? 0
+              s.movingShapePosition.xPos - 1 < 0 ||
+              // or if moving the shape to the left collides with a fixed block, do not move
+              isCollision({xPos: s.movingShapePosition.xPos - 1, yPos: s.movingShapePosition.yPos}, s.blockFilled)
+                ? s.movingShapePosition.xPos
                 : s.movingShapePosition.xPos - 1,
           },
         }
@@ -50,8 +54,7 @@ const reduceState: (s: State, action: Move | Rotate | number) => State = (
         ...s,
         // TODO: Rotate the shape, once shape is implemented
       }
-    :
-    tick(s, action);
+    : tick(s, action);
 
 // Function to check if a position is a collision
 const isCollision = (
@@ -60,13 +63,26 @@ const isCollision = (
 ) => {
   return (
     // Checks if the shape is at the bottom of the grid or collides with a fixed block
-    pos.yPos >= Constants.GRID_HEIGHT ||
-    blockFilled[pos.yPos][pos.xPos]
+    pos.yPos >= Constants.GRID_HEIGHT || blockFilled[pos.yPos][pos.xPos]
   );
 };
 
 // Function to move the shape down
 const moveShapeDown = (s: State, randomX: number) => {
+  // Check if the new block exceeds the top of the grid
+  if (
+    s.movingShapePosition.yPos === 0 &&
+    isCollision(
+      { xPos: s.movingShapePosition.xPos, yPos: s.movingShapePosition.yPos },
+      s.blockFilled
+    )
+  ) {
+    return {
+      ...s,
+      gameEnd: true,
+    };
+  }
+
   // Move the moving shape down
   const newY = s.movingShapePosition.yPos + 1;
   const x = s.movingShapePosition.xPos;
@@ -115,7 +131,7 @@ const handleFilledRows = (s: State) => {
   const currScore = s.blockFilled.reduce(
     (acc, row) => (isRowFilled(row) ? acc + Constants.GRID_WIDTH : acc),
     s.currScore
-  )
+  );
   return {
     ...s,
     currScore: currScore,
