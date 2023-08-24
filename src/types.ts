@@ -1,5 +1,5 @@
-export {Viewport, Constants, Block, Move, Rotate}
-export type {BlockPosition, State, Key, Event }
+export {Viewport, Constants, Block, Move, Rotate, tetrisShapes}
+export type {BlockPosition, State, Key, Event, Shape }
 
 // Constants
 const Viewport = {
@@ -25,8 +25,30 @@ type BlockPosition = Readonly<{ xPos: number; yPos: number }>;
 
 type Shape = Readonly<{
   positions: ReadonlyArray<BlockPosition>;
+  // center: BlockPosition;
   color: string;
 }>
+
+const tetrisShapes: Shape[] = [
+  {
+    positions: [
+      { xPos: 0, yPos: 0 },   // Center
+      { xPos: 1, yPos: 0 },
+      { xPos: 2, yPos: 0 },
+      { xPos: 3, yPos: 0 },
+    ],
+    color: "blue",
+  },
+  {
+    positions: [
+      { xPos: 0, yPos: 0 },   // Center
+      { xPos: 1, yPos: 0 },
+      { xPos: 0, yPos: 1 },
+      { xPos: 1, yPos: 1 },
+    ],
+    color: "yellow"
+  },
+];
 
 type State = Readonly<{
   gameEnd: boolean;                                     // To end the game
@@ -34,6 +56,8 @@ type State = Readonly<{
   highScore: number;                                    // To keep track of the high score
   level: number;                                        // To keep track of the level
   movingShapePosition: BlockPosition;                   // To render the moving shape
+  movingShape: Shape;
+  // movingShapeIndex: number;                             // To keep track of the current shape from tetrisShapes
   blockFilled: ReadonlyArray<ReadonlyArray<Boolean>>;   // For collision detection
 }>;
 

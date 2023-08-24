@@ -1,6 +1,14 @@
 export { initialState, reduceState, tick };
 
-import { BlockPosition, Constants, Move, Rotate, State } from "./types";
+import {
+  BlockPosition,
+  Constants,
+  Move,
+  Rotate,
+  Shape,
+  State,
+  tetrisShapes,
+} from "./types";
 
 const initialState: State = {
   gameEnd: false,
@@ -8,6 +16,8 @@ const initialState: State = {
   highScore: 0,
   level: 0,
   movingShapePosition: { xPos: 0, yPos: 0 }, // TODO: Replace with random position
+  movingShape: tetrisShapes[1], // TODO: Replace with random shape
+  // movingShapeIndex: 0, // TODO: Replace with random index
   blockFilled: Array.from({ length: Constants.GRID_HEIGHT }, () =>
     Array(Constants.GRID_WIDTH).fill(false)
   ),
@@ -29,7 +39,13 @@ const reduceState: (s: State, action: Move | Rotate | number) => State = (
               // If the shape is at the right edge of the grid, do not move
               s.movingShapePosition.xPos + 1 >= Constants.GRID_WIDTH ||
               // or if moving the shape to the right collides with a fixed block, do not move
-              isCollision({xPos: s.movingShapePosition.xPos + 1, yPos: s.movingShapePosition.yPos}, s.blockFilled)
+              isCollision(
+                {
+                  xPos: s.movingShapePosition.xPos + 1,
+                  yPos: s.movingShapePosition.yPos,
+                },
+                s.blockFilled
+              )
                 ? s.movingShapePosition.xPos
                 : s.movingShapePosition.xPos + 1,
           },
@@ -43,7 +59,13 @@ const reduceState: (s: State, action: Move | Rotate | number) => State = (
               // If the shape is at the left edge of the grid, do not move
               s.movingShapePosition.xPos - 1 < 0 ||
               // or if moving the shape to the left collides with a fixed block, do not move
-              isCollision({xPos: s.movingShapePosition.xPos - 1, yPos: s.movingShapePosition.yPos}, s.blockFilled)
+              isCollision(
+                {
+                  xPos: s.movingShapePosition.xPos - 1,
+                  yPos: s.movingShapePosition.yPos,
+                },
+                s.blockFilled
+              )
                 ? s.movingShapePosition.xPos
                 : s.movingShapePosition.xPos - 1,
           },
@@ -53,6 +75,7 @@ const reduceState: (s: State, action: Move | Rotate | number) => State = (
     ? {
         ...s,
         // TODO: Rotate the shape, once shape is implemented
+        movingShape: rotateShape(s.movingShape),
       }
     : tick(s, action);
 
@@ -67,8 +90,13 @@ const isCollision = (
   );
 };
 
-// Function to move the shape down
-const moveShapeDown = (s: State, randomX: number) => {
+/**
+ * Updates the state by proceeding with one time step.
+ *
+ * @param s Current state
+ * @returns Updated state
+ */
+const tick = (s: State, randomX: number) => {
   // Check if the new block exceeds the top of the grid
   if (
     s.movingShapePosition.yPos === 0 &&
@@ -102,7 +130,8 @@ const moveShapeDown = (s: State, randomX: number) => {
 
     // Generate a new shape position
     const newShapePosition = {
-      xPos: randomX,
+      // xPos: randomX,
+      xPos: 5,
       yPos: 0,
     };
 
@@ -148,12 +177,13 @@ const handleFilledRows = (s: State) => {
   };
 };
 
-/**
- * Updates the state by proceeding with one time step.
- *
- * @param s Current state
- * @returns Updated state
- */
-const tick = (s: State, randomX: number) => {
-  return moveShapeDown(s, randomX);
+const rotateShape = (shape: Shape): Shape => {
+  const newPositions = shape.positions.map((pos) => ({
+    xPos: -pos.yPos,
+    yPos: pos.xPos,
+  }));
+  return {
+    ...shape,
+    positions: newPositions,
+  };
 };

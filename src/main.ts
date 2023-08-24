@@ -61,53 +61,65 @@ function main() {
    */
   const render = (s: State) => {
     // Reset the canvas
-    svg.innerHTML = "";
+      svg.innerHTML = "";
+      // FIXME: Game Over screen is not showing
 
-    // Update the level
-    levelText.innerHTML = `${s.level}`;
+      // Update the level
+      levelText.innerHTML = `${s.level}`;
 
-    // Update the score
-    scoreText.innerHTML = `${s.currScore}`;
+      // Update the score
+      scoreText.innerHTML = `${s.currScore}`;
 
-    // Update the high score
-    highScoreText.innerHTML = `${s.highScore}`;
+      // Update the high score
+      highScoreText.innerHTML = `${s.highScore}`;
 
-    // Render blocks
-    s.blockFilled.forEach((row, y) =>
-      row.forEach((bool, x) => {
-        if (bool) {
-          const block = createSvgElement(svg.namespaceURI, "rect", {
-            height: `${Block.HEIGHT}`,
-            width: `${Block.WIDTH}`,
-            x: `${Block.WIDTH * x}`,
-            y: `${Block.HEIGHT * y}`,
-            style: "fill: green", // Color for fixed blocks, TODO: stick to the shape's color
-          });
-          svg.appendChild(block);
-        }
-      })
-    );
+      // Render blocks
+      s.blockFilled.forEach((row, y) =>
+        row.forEach((bool, x) => {
+          if (bool) {
+            const block = createSvgElement(svg.namespaceURI, "rect", {
+              height: `${Block.HEIGHT}`,
+              width: `${Block.WIDTH}`,
+              x: `${Block.WIDTH * x}`,
+              y: `${Block.HEIGHT * y}`,
+              style: "fill: green", // Color for fixed blocks, TODO: stick to the shape's color
+            });
+            svg.appendChild(block);
+          }
+        })
+      );
 
-    // Render the moving shape
-    const { xPos, yPos } = s.movingShapePosition;
-    const cube = createSvgElement(svg.namespaceURI, "rect", {
-      height: `${Block.HEIGHT}`,
-      width: `${Block.WIDTH}`,
-      x: `${Block.WIDTH * xPos}`,
-      y: `${Block.HEIGHT * yPos}`,
-      style: "fill: pink", // Color for the moving shape
-    });
-    svg.appendChild(cube);
+      // Render the moving shape
+      s.movingShape.positions.forEach((pos) => {
+        const { xPos, yPos } = pos;
+        const block = createSvgElement(svg.namespaceURI, "rect", {
+          height: `${Block.HEIGHT}`,
+          width: `${Block.WIDTH}`,
+          x: `${Block.WIDTH * (s.movingShapePosition.xPos + xPos)}`,
+          y: `${Block.HEIGHT * (s.movingShapePosition.yPos + yPos)}`,
+          style: `fill: ${s.movingShape.color}`,
+        });
+        svg.appendChild(block);
+      });
+      // const { xPos, yPos } = s.movingShapePosition;
+      // const cube = createSvgElement(svg.namespaceURI, "rect", {
+      //   height: `${Block.HEIGHT}`,
+      //   width: `${Block.WIDTH}`,
+      //   x: `${Block.WIDTH * xPos}`,
+      //   y: `${Block.HEIGHT * yPos}`,
+      //   style: "fill: pink", // TODO: change to the shape's color
+      // });
+      // svg.appendChild(cube);
 
-    // Add a block to the preview canvas
-    // const cubePreview = createSvgElement(preview.namespaceURI, "rect", {
-    //   height: `${Block.HEIGHT}`,
-    //   width: `${Block.WIDTH}`,
-    //   x: `${Block.WIDTH * 2}`,
-    //   y: `${Block.HEIGHT}`,
-    //   style: "fill: green",
-    // });
-    // preview.appendChild(cubePreview);
+      // Add a block to the preview canvas
+      // const cubePreview = createSvgElement(preview.namespaceURI, "rect", {
+      //   height: `${Block.HEIGHT}`,
+      //   width: `${Block.WIDTH}`,
+      //   x: `${Block.WIDTH * 2}`,
+      //   y: `${Block.HEIGHT}`,
+      //   style: "fill: green",
+      // });
+      // preview.appendChild(cubePreview);
   };
 
   // Observable streams
@@ -120,13 +132,13 @@ function main() {
   const right$ = fromKey("KeyD").pipe(map(() => new Move(1)));
   const rotate$ = fromKey("KeyS").pipe(map(() => new Rotate()));
 
-  const xRandom$ = createRngStreamFromSource(gameClock$)(new Date().getTime()); 
-  
+  const xRandom$ = createRngStreamFromSource(gameClock$)(new Date().getTime());
+
   // Merge all streams
   const source$ = merge(left$, right$, rotate$, xRandom$)
     .pipe(
       scan(reduceState, initialState),
-      map((s) => (s.gameEnd ? initialState : s))
+      // map((s) => (s.gameEnd ? { ...s, gameEnd: true } : s))
     )
     .subscribe((s: State) => {
       render(s);
