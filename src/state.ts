@@ -1,6 +1,6 @@
 export { initialState, reduceState, tick };
 
-import { BlockPosition, Constants, Move, NewShape, Rotate, State } from "./types";
+import { BlockPosition, Constants, Move, Rotate, State } from "./types";
 
 const initialState: State = {
   gameEnd: false,
@@ -112,14 +112,14 @@ const isRowFilled = (row: ReadonlyArray<Boolean>) => {
 // Function to handle filled rows
 const handleFilledRows = (s: State) => {
   // Return the state with filled rows removed from the blockFilled array
+  const currScore = s.blockFilled.reduce(
+    (acc, row) => (isRowFilled(row) ? acc + Constants.GRID_WIDTH : acc),
+    s.currScore
+  )
   return {
     ...s,
-    currScore: s.blockFilled.reduce(
-      (acc, row) => (isRowFilled(row) ? acc + Constants.GRID_WIDTH : acc),
-      s.currScore
-    ),
-    // FIXME: High score updates in the next tick
-    highScore: s.currScore > s.highScore ? s.currScore : s.highScore,
+    currScore: currScore,
+    highScore: currScore > s.highScore ? currScore : s.highScore,
     blockFilled: s.blockFilled.reduce(
       (acc, row) =>
         isRowFilled(row)

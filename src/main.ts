@@ -20,12 +20,9 @@ import {
   Viewport,
   Key,
   Block,
-  BlockPosition,
   State,
   Move,
-  IMPLEMENT_THIS,
   Rotate,
-  NewShape,
 } from "./types";
 import { RNG } from "./util";
 import { initialState, reduceState, tick } from "./state";
@@ -123,8 +120,8 @@ function main() {
   const right$ = fromKey("KeyD").pipe(map(() => new Move(1)));
   const rotate$ = fromKey("KeyS").pipe(map(() => new Rotate()));
 
-  const xRandom$ = createRngStreamFromSource(gameClock$)(new Date().getTime());  // FIXME: Replace with a random seed and replace stream with a stream that emits when the shape is at the bottom of the grid
-
+  const xRandom$ = createRngStreamFromSource(gameClock$)(new Date().getTime()); 
+  
   // Merge all streams
   const source$ = merge(left$, right$, rotate$, xRandom$)
     .pipe(

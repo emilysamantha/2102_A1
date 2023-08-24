@@ -1,9 +1,7 @@
-export {IMPLEMENT_THIS, Viewport, Constants, Block, Move, Rotate, NewShape}
+export {Viewport, Constants, Block, Move, Rotate}
 export type {BlockPosition, State, Key, Event }
 
 // Constants
-const IMPLEMENT_THIS: any = undefined;
-
 const Viewport = {
   CANVAS_WIDTH: 200,
   CANVAS_HEIGHT: 400,
@@ -47,14 +45,6 @@ class Move {
   constructor(public readonly direction: number) {}
 }
 
-class Tick {
-  constructor(public readonly elapsed: number) {}
-}
-
 class Rotate {
   constructor() {}
-}
-
-class NewShape {
-  constructor(public readonly x: number) {}
 }
