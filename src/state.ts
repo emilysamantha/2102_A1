@@ -16,9 +16,12 @@ const initialState: State = {
   highScore: 0,
   level: 0,
   movingShapePosition: { xPos: 0, yPos: 0 }, // TODO: Replace with random position
-  movingShape: tetrisShapes[1], // TODO: Replace with random shape
+  movingShape: tetrisShapes[0], // TODO: Replace with random shape
   blockFilled: Array.from({ length: Constants.GRID_HEIGHT }, () =>
     Array(Constants.GRID_WIDTH).fill(false)
+  ),
+  blockFilledColor: Array.from({ length: Constants.GRID_HEIGHT }, () =>
+    Array(Constants.GRID_WIDTH).fill("")
   ),
 } as const;
 
@@ -133,7 +136,21 @@ const tick = (s: State, randomX: number) => {
       },
       s.blockFilled
     );
-    
+
+    // Update the blockFilledColor array
+    const newBlockFilledColor = s.movingShape.positions.reduce(
+      (accBlockFilledColor, { xPos: xShift, yPos: yShift }) => {
+        return [
+          ...accBlockFilledColor.slice(0, s.movingShapePosition.yPos + yShift),
+          [...accBlockFilledColor[newY + yShift - 1].slice(0, x + xShift),
+          s.movingShape.color,
+          ...accBlockFilledColor[newY + yShift - 1].slice(x + xShift + 1)],
+          ...accBlockFilledColor.slice(newY + yShift),
+        ];
+      },
+      s.blockFilledColor
+    )
+
     // Generate a new shape position
     const newShapePosition = {
       // xPos: randomX,
@@ -144,6 +161,7 @@ const tick = (s: State, randomX: number) => {
     return handleFilledRows({
       ...s,
       blockFilled: newBlockFilled,
+      blockFilledColor: newBlockFilledColor,
       movingShapePosition: newShapePosition,
     });
   }

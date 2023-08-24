@@ -82,7 +82,7 @@ function main() {
               width: `${Block.WIDTH}`,
               x: `${Block.WIDTH * x}`,
               y: `${Block.HEIGHT * y}`,
-              style: "fill: green", // Color for fixed blocks, TODO: stick to the shape's color
+              style: `fill: ${s.blockFilledColor[y][x]}`, // Color for fixed blocks, TODO: stick to the shape's color
             });
             svg.appendChild(block);
           }

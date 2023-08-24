@@ -25,21 +25,30 @@ type BlockPosition = Readonly<{ xPos: number; yPos: number }>;
 
 type Shape = Readonly<{
   positions: ReadonlyArray<BlockPosition>;
-  // center: BlockPosition;
   color: string;
 }>
 
 const tetrisShapes: Shape[] = [
   {
+    // 0
+    //  __ __ __ __
+    // |  |  |  |  |
+    // |__|__|__|__|
     positions: [
-      { xPos: 0, yPos: 0 },   // Center
+      { xPos: -1, yPos: 0 },   // Center
+      { xPos: 0, yPos: 0 },
       { xPos: 1, yPos: 0 },
       { xPos: 2, yPos: 0 },
-      { xPos: 3, yPos: 0 },
     ],
-    color: "blue",
+    color: "lightBlue",
   },
   {
+    // 1
+    //  __ __
+    // |  |  |
+    // |__|__|
+    // |  |  |
+    // |__|__|
     positions: [
       { xPos: 0, yPos: 0 },   // Center
       { xPos: 1, yPos: 0 },
@@ -48,6 +57,81 @@ const tetrisShapes: Shape[] = [
     ],
     color: "yellow"
   },
+  {
+    // 2
+    // __
+    //|  |
+    //|__|___ __
+    //|  |   |  |
+    //|__|_*_|__|
+    positions: [
+      { xPos: -1, yPos: -1 },  
+      { xPos: -1, yPos: 0 },
+      { xPos: 0, yPos: 0 }, // Center
+      { xPos: 1, yPos: 0 },
+    ],
+    color: "cornflowerBlue"
+  },
+  {
+    // 3
+    //          __
+    //        |  |
+    // __ ___ |__|
+    //|  |   |  |
+    //|__|_*_|__|
+    positions: [
+      { xPos: 1, yPos: -1 },   
+      { xPos: -1, yPos: 0 },
+      { xPos: 0, yPos: 0 },   // Center
+      { xPos: 1, yPos: 0 },
+    ],
+    color: "salmon"
+  },
+  {
+    // 4
+    //    ___ __
+    //   |   |  |
+    // __|_*_|__|
+    //|  |  |  
+    //|__|__|
+    positions: [
+      { xPos: 0, yPos: 0 },   // Center
+      { xPos: 1, yPos: 0 },
+      { xPos: -1, yPos: 1 },
+      { xPos: 0, yPos: 1 },
+    ],
+    color: "lightGreen"
+  },
+  {
+    // 5
+    // __  __
+    //|   |  |
+    //|__|__ |__
+    //   |  |  |  
+    //   |__|__|
+    positions: [
+      { xPos: -1, yPos: 0 },  
+      { xPos: 0, yPos: 0 },  // Center
+      { xPos: 0, yPos: 1 },
+      { xPos: 1, yPos: 1 },
+    ],
+    color: "pink"
+  },
+  {
+    // 6
+    //    __  
+    //   |   |
+    // __|__ |__
+    //|  |  |  |
+    //|__|__|__|
+    positions: [
+      { xPos: 0, yPos: -1 },   // Center
+      { xPos: -1, yPos: 0 },
+      { xPos: 0, yPos: 0 },
+      { xPos: 0, yPos: 1 },
+    ],
+    color: "violet"
+  }
 ];
 
 type State = Readonly<{
@@ -59,6 +143,7 @@ type State = Readonly<{
   movingShape: Shape;
   // movingShapeIndex: number;                             // To keep track of the current shape from tetrisShapes
   blockFilled: ReadonlyArray<ReadonlyArray<Boolean>>;   // For collision detection
+  blockFilledColor: ReadonlyArray<ReadonlyArray<String>>; // To render the fixed blocks
 }>;
 
 type Key = "KeyS" | "KeyA" | "KeyD";
