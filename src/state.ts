@@ -15,8 +15,9 @@ const initialState: State = {
   currScore: 0,
   highScore: 0,
   level: 0,
-  movingShapePosition: { xPos: 0, yPos: 0 }, // TODO: Replace with random position
+  movingShapePosition: { xPos: 4, yPos: 0 }, // TODO: Replace with random position
   movingShape: tetrisShapes[0], // TODO: Replace with random shape
+  movingShapeIndex: 0, // TODO: Replace with random index
   blockFilled: Array.from({ length: Constants.GRID_HEIGHT }, () =>
     Array(Constants.GRID_WIDTH).fill(false)
   ),
@@ -26,10 +27,10 @@ const initialState: State = {
 } as const;
 
 // State transducer
-const reduceState: (s: State, action: Move | Rotate | number) => State = (
-  s,
-  action
-) =>
+const reduceState: (
+  s: State,
+  action: Move | Rotate | [number, number]
+) => State = (s, action) =>
   action instanceof Move
     ? // Move right
       action.direction === 1
@@ -39,7 +40,12 @@ const reduceState: (s: State, action: Move | Rotate | number) => State = (
             ...s.movingShapePosition,
             xPos:
               // If the shape is at the right edge of the grid, do not move
-              s.movingShapePosition.xPos + 1 >= Constants.GRID_WIDTH ||
+              s.movingShape.positions.some(
+                ({ xPos: xShift }) =>
+                  s.movingShapePosition.xPos + xShift + 1 >=
+                  Constants.GRID_WIDTH
+              ) ||
+              // s.movingShapePosition.xPos + 1 >= Constants.GRID_WIDTH ||
               // or if moving the shape to the right collides with a fixed block, do not move
               isCollision(
                 {
@@ -59,7 +65,11 @@ const reduceState: (s: State, action: Move | Rotate | number) => State = (
             ...s.movingShapePosition,
             xPos:
               // If the shape is at the left edge of the grid, do not move
-              s.movingShapePosition.xPos - 1 < 0 ||
+              s.movingShape.positions.some(
+                ({ xPos: xShift }) =>
+                  s.movingShapePosition.xPos + xShift - 1 < 0
+              ) ||
+              // s.movingShapePosition.xPos - 1 < 0 ||
               // or if moving the shape to the left collides with a fixed block, do not move
               isCollision(
                 {
@@ -86,8 +96,10 @@ const isCollision = (
   blockFilled: ReadonlyArray<ReadonlyArray<Boolean>>
 ) => {
   return (
-    // Checks if the shape is at the bottom of the grid or collides with a fixed block
-    pos.yPos >= Constants.GRID_HEIGHT || blockFilled[pos.yPos][pos.xPos]
+    // Checks if the shape is at the bottom of the grid or
+    pos.yPos >= Constants.GRID_HEIGHT ||
+    // collides with a fixed block
+    blockFilled[pos.yPos][pos.xPos]
   );
 };
 
@@ -97,7 +109,7 @@ const isCollision = (
  * @param s Current state
  * @returns Updated state
  */
-const tick = (s: State, randomX: number) => {
+const tick = (s: State, randomShape: [number, number]) => {
   // Check if the new block exceeds the top of the grid
   if (
     s.movingShapePosition.yPos === 0 &&
@@ -114,7 +126,6 @@ const tick = (s: State, randomX: number) => {
 
   // Move the moving shape down
   // If moving shape collides with a fixed block or the bottom of the grid
-  // TODO: Iterate through the shape's position to check for collision
   const newY = s.movingShapePosition.yPos + 1;
   const x = s.movingShapePosition.xPos;
 
@@ -128,9 +139,11 @@ const tick = (s: State, randomX: number) => {
       (accBlockFilled, { xPos: xShift, yPos: yShift }) => {
         return [
           ...accBlockFilled.slice(0, s.movingShapePosition.yPos + yShift),
-          [...accBlockFilled[newY + yShift - 1].slice(0, x + xShift),
-          true,
-          ...accBlockFilled[newY + yShift - 1].slice(x + xShift + 1)],
+          [
+            ...accBlockFilled[newY + yShift - 1].slice(0, x + xShift),
+            true,
+            ...accBlockFilled[newY + yShift - 1].slice(x + xShift + 1),
+          ],
           ...accBlockFilled.slice(newY + yShift),
         ];
       },
@@ -142,19 +155,26 @@ const tick = (s: State, randomX: number) => {
       (accBlockFilledColor, { xPos: xShift, yPos: yShift }) => {
         return [
           ...accBlockFilledColor.slice(0, s.movingShapePosition.yPos + yShift),
-          [...accBlockFilledColor[newY + yShift - 1].slice(0, x + xShift),
-          s.movingShape.color,
-          ...accBlockFilledColor[newY + yShift - 1].slice(x + xShift + 1)],
+          [
+            ...accBlockFilledColor[newY + yShift - 1].slice(0, x + xShift),
+            s.movingShape.color,
+            ...accBlockFilledColor[newY + yShift - 1].slice(x + xShift + 1),
+          ],
           ...accBlockFilledColor.slice(newY + yShift),
         ];
       },
       s.blockFilledColor
-    )
+    );
 
-    // Generate a new shape position
+    // Generate a new shape
+    const randomX = Math.floor(
+      ((randomShape[0] + 1) / 2) * Constants.GRID_WIDTH
+    );
+    const randomShapeIndex = Math.floor(
+      ((randomShape[1] + 1) / 2) * tetrisShapes.length
+    );
     const newShapePosition = {
-      // xPos: randomX,
-      xPos: 5,
+      xPos: randomX,
       yPos: 0,
     };
 
@@ -163,6 +183,8 @@ const tick = (s: State, randomX: number) => {
       blockFilled: newBlockFilled,
       blockFilledColor: newBlockFilledColor,
       movingShapePosition: newShapePosition,
+      movingShape: tetrisShapes[randomShapeIndex],
+      movingShapeIndex: randomShapeIndex,
     });
   }
 

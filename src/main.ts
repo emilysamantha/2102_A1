@@ -13,7 +13,7 @@
  */
 
 import "./style.css";
-import { fromEvent, interval, merge, Observable } from "rxjs";
+import { fromEvent, interval, merge, Observable, zip } from "rxjs";
 import { map, filter, scan } from "rxjs/operators";
 import {
   Constants,
@@ -124,9 +124,10 @@ function main() {
   const rotate$ = fromKey("KeyS").pipe(map(() => new Rotate()));
 
   const xRandom$ = createRngStreamFromSource(gameClock$)(new Date().getTime());
+  const shapeIndexRandom$ = createRngStreamFromSource(gameClock$)(new Date().getTime());
 
   // Merge all streams
-  const source$ = merge(left$, right$, rotate$, xRandom$)
+  const source$ = merge(left$, right$, rotate$, zip(xRandom$, shapeIndexRandom$))
     .pipe(
       scan(reduceState, initialState),
     )
@@ -146,7 +147,6 @@ function createRngStreamFromSource<T>(source$: Observable<T>) {
     const randomNumberStream = source$.pipe(
       scan((acc, _) => RNG.hash(acc), seed),
       map(RNG.scale),
-      map((v) => Math.floor(((v + 1) / 2) * Constants.GRID_WIDTH))
     );
     return randomNumberStream;
   };

@@ -10,7 +10,7 @@ const Viewport = {
 } as const;
 
 const Constants = {
-  TICK_RATE_MS: 200,
+  TICK_RATE_MS: 400,
   GRID_WIDTH: 10,
   GRID_HEIGHT: 20,
 } as const;
@@ -40,7 +40,7 @@ const tetrisShapes: Shape[] = [
       { xPos: 1, yPos: 0 },
       { xPos: 2, yPos: 0 },
     ],
-    color: "lightBlue",
+    color: "cyan",
   },
   {
     // 1
@@ -70,7 +70,7 @@ const tetrisShapes: Shape[] = [
       { xPos: 0, yPos: 0 }, // Center
       { xPos: 1, yPos: 0 },
     ],
-    color: "cornflowerBlue"
+    color: "blue"
   },
   {
     // 3
@@ -85,7 +85,7 @@ const tetrisShapes: Shape[] = [
       { xPos: 0, yPos: 0 },   // Center
       { xPos: 1, yPos: 0 },
     ],
-    color: "salmon"
+    color: "orange"
   },
   {
     // 4
@@ -100,7 +100,7 @@ const tetrisShapes: Shape[] = [
       { xPos: -1, yPos: 1 },
       { xPos: 0, yPos: 1 },
     ],
-    color: "lightGreen"
+    color: "green"
   },
   {
     // 5
@@ -115,7 +115,7 @@ const tetrisShapes: Shape[] = [
       { xPos: 0, yPos: 1 },
       { xPos: 1, yPos: 1 },
     ],
-    color: "pink"
+    color: "red"
   },
   {
     // 6
@@ -130,7 +130,7 @@ const tetrisShapes: Shape[] = [
       { xPos: 0, yPos: 0 },
       { xPos: 0, yPos: 1 },
     ],
-    color: "violet"
+    color: "purple"
   }
 ];
 
@@ -141,7 +141,7 @@ type State = Readonly<{
   level: number;                                        // To keep track of the level
   movingShapePosition: BlockPosition;                   // To render the moving shape
   movingShape: Shape;
-  // movingShapeIndex: number;                             // To keep track of the current shape from tetrisShapes
+  movingShapeIndex: number;                             // To keep track of the current shape from tetrisShapes
   blockFilled: ReadonlyArray<ReadonlyArray<Boolean>>;   // For collision detection
   blockFilledColor: ReadonlyArray<ReadonlyArray<String>>; // To render the fixed blocks
 }>;
