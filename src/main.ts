@@ -101,15 +101,6 @@ function main() {
         });
         svg.appendChild(block);
       });
-      // const { xPos, yPos } = s.movingShapePosition;
-      // const cube = createSvgElement(svg.namespaceURI, "rect", {
-      //   height: `${Block.HEIGHT}`,
-      //   width: `${Block.WIDTH}`,
-      //   x: `${Block.WIDTH * xPos}`,
-      //   y: `${Block.HEIGHT * yPos}`,
-      //   style: "fill: pink", // TODO: change to the shape's color
-      // });
-      // svg.appendChild(cube);
 
       // Add a block to the preview canvas
       // const cubePreview = createSvgElement(preview.namespaceURI, "rect", {
@@ -138,7 +129,6 @@ function main() {
   const source$ = merge(left$, right$, rotate$, xRandom$)
     .pipe(
       scan(reduceState, initialState),
-      // map((s) => (s.gameEnd ? { ...s, gameEnd: true } : s))
     )
     .subscribe((s: State) => {
       render(s);

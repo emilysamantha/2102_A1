@@ -17,7 +17,6 @@ const initialState: State = {
   level: 0,
   movingShapePosition: { xPos: 0, yPos: 0 }, // TODO: Replace with random position
   movingShape: tetrisShapes[1], // TODO: Replace with random shape
-  // movingShapeIndex: 0, // TODO: Replace with random index
   blockFilled: Array.from({ length: Constants.GRID_HEIGHT }, () =>
     Array(Constants.GRID_WIDTH).fill(false)
   ),
@@ -74,7 +73,6 @@ const reduceState: (s: State, action: Move | Rotate | number) => State = (
     action instanceof Rotate
     ? {
         ...s,
-        // TODO: Rotate the shape, once shape is implemented
         movingShape: rotateShape(s.movingShape),
       }
     : tick(s, action);
@@ -112,22 +110,30 @@ const tick = (s: State, randomX: number) => {
   }
 
   // Move the moving shape down
+  // If moving shape collides with a fixed block or the bottom of the grid
+  // TODO: Iterate through the shape's position to check for collision
   const newY = s.movingShapePosition.yPos + 1;
   const x = s.movingShapePosition.xPos;
 
-  // If moving shape collides with a fixed block or the bottom of the grid
-  if (isCollision({ xPos: x, yPos: newY }, s.blockFilled)) {
-    // Update the fixed blocks and blockFilled arrays
-    const newBlockFilled = [
-      ...s.blockFilled.slice(0, newY - 1),
-      [
-        ...s.blockFilled[newY - 1].slice(0, x),
-        true,
-        ...s.blockFilled[newY - 1].slice(x + 1),
-      ],
-      ...s.blockFilled.slice(newY),
-    ];
-
+  if (
+    s.movingShape.positions.some(({ xPos, yPos }) =>
+      isCollision({ xPos: x + xPos, yPos: newY + yPos }, s.blockFilled)
+    )
+  ) {
+    // Update the blockFilled array
+    const newBlockFilled = s.movingShape.positions.reduce(
+      (accBlockFilled, { xPos: xShift, yPos: yShift }) => {
+        return [
+          ...accBlockFilled.slice(0, s.movingShapePosition.yPos + yShift),
+          [...accBlockFilled[newY + yShift - 1].slice(0, x + xShift),
+          true,
+          ...accBlockFilled[newY + yShift - 1].slice(x + xShift + 1)],
+          ...accBlockFilled.slice(newY + yShift),
+        ];
+      },
+      s.blockFilled
+    );
+    
     // Generate a new shape position
     const newShapePosition = {
       // xPos: randomX,
@@ -178,6 +184,7 @@ const handleFilledRows = (s: State) => {
 };
 
 const rotateShape = (shape: Shape): Shape => {
+  // TODO: Check for 2x2 block shape, do not rotate
   const newPositions = shape.positions.map((pos) => ({
     xPos: -pos.yPos,
     yPos: pos.xPos,
