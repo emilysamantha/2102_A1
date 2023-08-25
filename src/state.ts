@@ -17,7 +17,7 @@ const initialState: State = {
   level: 0,
   movingShape: tetrisShapes[0], // TODO: Replace with random shape
   movingShapePosition: { xPos: 4, yPos: 0 }, // TODO: Replace with random position
-  movingShapeIndex: 0, // TODO: Replace with random index
+  nextShape: tetrisShapes[6], // TODO: Replace with random shape
   blockFilled: Array.from({ length: Constants.GRID_HEIGHT }, () =>
     Array(Constants.GRID_WIDTH).fill(false)
   ),
@@ -86,7 +86,7 @@ const reduceState: (
     action instanceof Rotate
     ? {
         ...s,
-        movingShape: rotateShape(s.movingShape),
+        movingShape: rotateShape(s.movingShapePosition, s.movingShape),
       }
     : tick(s, action);
 
@@ -99,7 +99,7 @@ const isCollision = (
     // Checks if the shape is at the bottom of the grid or
     pos.yPos >= Constants.GRID_HEIGHT ||
     // collides with a fixed block
-    blockFilled[pos.yPos][pos.xPos]
+    blockFilled[pos.yPos >= 0 ? pos.yPos : 0][pos.xPos]
   );
 };
 
@@ -134,17 +134,24 @@ const tick = (s: State, randomShape: [number, number, number]) => {
       isCollision({ xPos: x + xPos, yPos: newY + yPos }, s.blockFilled)
     )
   ) {
+    // TODO: Check if yPos is less than 0
+    if (s.movingShape.positions.some(({ yPos }) => newY + yPos < 0)) {
+      return {
+        ...s,
+        gameEnd: true,
+      };
+    }
     // Update the blockFilled array
     const newBlockFilled = s.movingShape.positions.reduce(
       (accBlockFilled, { xPos: xShift, yPos: yShift }) => {
         return [
-          ...accBlockFilled.slice(0, s.movingShapePosition.yPos + yShift),
+          ...accBlockFilled.slice(0, Math.max(0, s.movingShapePosition.yPos + yShift)),
           [
-            ...accBlockFilled[newY + yShift - 1].slice(0, x + xShift),
+            ...accBlockFilled[Math.max(0, newY + yShift - 1)].slice(0, x + xShift),
             true,
-            ...accBlockFilled[newY + yShift - 1].slice(x + xShift + 1),
+            ...accBlockFilled[Math.max(0, newY + yShift - 1)].slice(x + xShift + 1),
           ],
-          ...accBlockFilled.slice(newY + yShift),
+          ...accBlockFilled.slice(Math.max(0, newY + yShift)),
         ];
       },
       s.blockFilled
@@ -154,13 +161,13 @@ const tick = (s: State, randomShape: [number, number, number]) => {
     const newBlockFilledColor = s.movingShape.positions.reduce(
       (accBlockFilledColor, { xPos: xShift, yPos: yShift }) => {
         return [
-          ...accBlockFilledColor.slice(0, s.movingShapePosition.yPos + yShift),
+          ...accBlockFilledColor.slice(0, Math.max(0, s.movingShapePosition.yPos + yShift)),
           [
-            ...accBlockFilledColor[newY + yShift - 1].slice(0, x + xShift),
+            ...accBlockFilledColor[Math.max(0, newY + yShift - 1)].slice(0, x + xShift),
             s.movingShape.color,
-            ...accBlockFilledColor[newY + yShift - 1].slice(x + xShift + 1),
+            ...accBlockFilledColor[Math.max(0, newY + yShift - 1)].slice(x + xShift + 1),
           ],
-          ...accBlockFilledColor.slice(newY + yShift),
+          ...accBlockFilledColor.slice(Math.max(0, newY + yShift)),
         ];
       },
       s.blockFilledColor
@@ -177,19 +184,20 @@ const tick = (s: State, randomShape: [number, number, number]) => {
       ((randomShape[2] + 1) / 2) * 4 + 1
     )
     const rotations = Array.from({ length: randomShapeRotationIndex });
-    const newRotatedShape = rotations.reduce((accShape, _) => rotateShape(accShape as Shape), tetrisShapes[randomShapeIndex] as Shape)
     const newShapePosition = {
       xPos: safeXPos(randomX, tetrisShapes[randomShapeIndex]),
       yPos: 0,
     };
+    const newRotatedShape = rotations.reduce((accShape, _) => rotateShape(newShapePosition, accShape as Shape), tetrisShapes[randomShapeIndex] as Shape)
+
 
     return handleFilledRows({
       ...s,
       blockFilled: newBlockFilled,
       blockFilledColor: newBlockFilledColor,
-      movingShape: newRotatedShape as Shape,
+      movingShape: s.nextShape,
+      nextShape: newRotatedShape as Shape,
       movingShapePosition: newShapePosition,
-      movingShapeIndex: randomShapeIndex,
     });
   }
 
@@ -228,7 +236,7 @@ const handleFilledRows = (s: State) => {
   };
 };
 
-const rotateShape = (shape: Shape): Shape => {
+const rotateShape = (movingShapePosition: BlockPosition, shape: Shape): Shape => {
   if (shape.excludeRotation) {
     return shape; // Do not rotate if marked to exclude rotation
   }
@@ -237,9 +245,10 @@ const rotateShape = (shape: Shape): Shape => {
     xPos: -pos.yPos,
     yPos: pos.xPos,
   }));
+
   return {
     ...shape,
-    positions: newPositions,
+    positions: safeShapePosition(movingShapePosition, newPositions),
   } as Shape;
 };
 
@@ -253,3 +262,19 @@ const safeXPos = (randomX: number, shape: Shape) => {
       : maxSafeXPos
     : minSafeXPos;
 };
+
+const safeShapePosition: (movingShapePosition: BlockPosition, positions: ReadonlyArray<BlockPosition>) => ReadonlyArray<BlockPosition> = (movingShapePosition, positions) => {
+  const isBeyondLeft = positions.some(({ xPos: xShift }) => movingShapePosition.xPos + xShift < 0);
+  const isBeyondRight = positions.some(({ xPos: xShift }) => movingShapePosition.xPos + xShift >= Constants.GRID_WIDTH);
+  if (isBeyondLeft) {
+    // Shift the shape to the right
+    console.log("isBeyondLeft");
+    return safeShapePosition(movingShapePosition, positions.map(({ xPos, yPos }) => ({ xPos: xPos + 1, yPos })));
+  }
+  if (isBeyondRight) {
+    console.log("isBeyondRight");
+    // Shift the shape to the left
+    return safeShapePosition(movingShapePosition, positions.map(({ xPos, yPos }) => ({ xPos: xPos - 1, yPos })));
+  }
+  return positions;
+}

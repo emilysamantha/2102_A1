@@ -15,15 +15,7 @@
 import "./style.css";
 import { fromEvent, interval, merge, Observable, zip } from "rxjs";
 import { map, filter, scan } from "rxjs/operators";
-import {
-  Constants,
-  Viewport,
-  Key,
-  Block,
-  State,
-  Move,
-  Rotate,
-} from "./types";
+import { Constants, Viewport, Key, Block, State, Move, Rotate } from "./types";
 import { RNG } from "./util";
 import { initialState, reduceState, tick } from "./state";
 import { createSvgElement, hide, show } from "./view";
@@ -61,56 +53,64 @@ function main() {
    */
   const render = (s: State) => {
     // Reset the canvas
-      svg.innerHTML = "";
-      // FIXME: Game Over screen is not showing
+    svg.innerHTML =
+      '<g id="gameOver" visibility="hidden"><rect x="26" y="120" fill="white" height="48" width="149"></rect><text x="36" y="150">Game Over</text></g>';
+    // FIXME: Game Over screen is not showing
 
-      // Update the level
-      levelText.innerHTML = `${s.level}`;
+    // Reset the preview canvas
+    preview.innerHTML = "";
 
-      // Update the score
-      scoreText.innerHTML = `${s.currScore}`;
+    // Update the level
+    levelText.innerHTML = `${s.level}`;
 
-      // Update the high score
-      highScoreText.innerHTML = `${s.highScore}`;
+    // Update the score
+    scoreText.innerHTML = `${s.currScore}`;
 
-      // Render blocks
-      s.blockFilled.forEach((row, y) =>
-        row.forEach((bool, x) => {
-          if (bool) {
-            const block = createSvgElement(svg.namespaceURI, "rect", {
-              height: `${Block.HEIGHT}`,
-              width: `${Block.WIDTH}`,
-              x: `${Block.WIDTH * x}`,
-              y: `${Block.HEIGHT * y}`,
-              style: `fill: ${s.blockFilledColor[y][x]}`, // Color for fixed blocks, TODO: stick to the shape's color
-            });
-            svg.appendChild(block);
-          }
-        })
-      );
+    // Update the high score
+    highScoreText.innerHTML = `${s.highScore}`;
 
-      // Render the moving shape
-      s.movingShape.positions.forEach((pos) => {
-        const { xPos, yPos } = pos;
-        const block = createSvgElement(svg.namespaceURI, "rect", {
-          height: `${Block.HEIGHT}`,
-          width: `${Block.WIDTH}`,
-          x: `${Block.WIDTH * (s.movingShapePosition.xPos + xPos)}`,
-          y: `${Block.HEIGHT * (s.movingShapePosition.yPos + yPos)}`,
-          style: `fill: ${s.movingShape.color}`,
-        });
-        svg.appendChild(block);
-      });
+    // Render fixed blocks
+    s.blockFilled.forEach((row, y) =>
+      row.forEach((bool, x) => {
+        if (bool) {
+          const block = createSvgElement(svg.namespaceURI, "rect", {
+            height: `${Block.HEIGHT}`,
+            width: `${Block.WIDTH}`,
+            x: `${Block.WIDTH * x}`,
+            y: `${Block.HEIGHT * y}`,
+            style: `fill: ${s.blockFilledColor[y][x] !== null ? s.blockFilledColor[y][x] : "white"}`, 
+          });
+               
+          svg.appendChild(block);
+        }
+      })
+    );
 
-      // Add a block to the preview canvas
-      // const cubePreview = createSvgElement(preview.namespaceURI, "rect", {
-      //   height: `${Block.HEIGHT}`,
-      //   width: `${Block.WIDTH}`,
-      //   x: `${Block.WIDTH * 2}`,
-      //   y: `${Block.HEIGHT}`,
-      //   style: "fill: green",
-      // });
-      // preview.appendChild(cubePreview);
+    // Render the moving shape
+    s.movingShape.positions.forEach((pos) => {
+      const { xPos, yPos } = pos;
+      const block = createSvgElement(svg.namespaceURI, "rect", {
+        height: `${Block.HEIGHT}`,
+        width: `${Block.WIDTH}`,
+        x: `${Block.WIDTH * (s.movingShapePosition.xPos + xPos)}`,
+        y: `${Block.HEIGHT * (s.movingShapePosition.yPos + yPos)}`,
+        style: `fill: ${s.movingShape.color}`,
+      }); 
+      svg.appendChild(block);
+    });
+
+    // Render the next shape in the preview canvas
+    const cubePreview = s.nextShape.positions.forEach((pos) => {
+      const { xPos, yPos } = pos;
+      const block = createSvgElement(preview.namespaceURI, "rect", {
+        height: `${Block.HEIGHT}`,
+        width: `${Block.WIDTH}`,
+        x: `${Block.WIDTH * (3 + xPos)}`,
+        y: `${Block.HEIGHT * (1 + yPos)}`,
+        style: `fill: ${s.nextShape.color}`,
+      }); 
+      preview.appendChild(block);
+    });
   };
 
   // Observable streams
@@ -124,19 +124,26 @@ function main() {
   const rotate$ = fromKey("KeyS").pipe(map(() => new Rotate()));
 
   const xRandom$ = createRngStreamFromSource(gameClock$)(new Date().getTime());
-  const shapeIndexRandom$ = createRngStreamFromSource(gameClock$)(new Date().getTime() + 1);
-  const rotationIndexRandom$ = createRngStreamFromSource(gameClock$)(new Date().getTime() + 2);
+  const shapeIndexRandom$ = createRngStreamFromSource(gameClock$)(
+    new Date().getTime() + 1
+  );
+  const rotationIndexRandom$ = createRngStreamFromSource(gameClock$)(
+    new Date().getTime() + 2
+  );
 
   // Merge all streams
-  const source$ = merge(left$, right$, rotate$, zip(xRandom$, shapeIndexRandom$, rotationIndexRandom$))
-    .pipe(
-      scan(reduceState, initialState),
-    )
+  const source$ = merge(
+    left$,
+    right$,
+    rotate$,
+    zip(xRandom$, shapeIndexRandom$, rotationIndexRandom$)
+  )
+    .pipe(scan(reduceState, initialState))
     .subscribe((s: State) => {
       render(s);
 
       if (s.gameEnd) {
-        show(gameover);
+        // show(gameover);
       } else {
         hide(gameover);
       }
@@ -147,7 +154,7 @@ function createRngStreamFromSource<T>(source$: Observable<T>) {
   return function createRngStream(seed: number): Observable<number> {
     const randomNumberStream = source$.pipe(
       scan((acc, _) => RNG.hash(acc), seed),
-      map(RNG.scale),
+      map(RNG.scale)
     );
     return randomNumberStream;
   };

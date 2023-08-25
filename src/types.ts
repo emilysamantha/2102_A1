@@ -149,7 +149,7 @@ const tetrisShapes: Shape[] = [
     widthFromCenterToEnd: 1,
     widthFromCenterToStart: 1,
     color: "purple"
-  } as Shape
+  } 
 ];
 
 type State = Readonly<{
@@ -159,7 +159,7 @@ type State = Readonly<{
   level: number;                                        // To keep track of the level
   movingShape: Shape;
   movingShapePosition: BlockPosition;                   // To render the moving shape
-  movingShapeIndex: number;                             // To keep track of the current shape from tetrisShapes
+  nextShape: Shape;                                     // To render the next shape
   blockFilled: ReadonlyArray<ReadonlyArray<Boolean>>;   // For collision detection
   blockFilledColor: ReadonlyArray<ReadonlyArray<String>>; // To render the fixed blocks
 }>;
