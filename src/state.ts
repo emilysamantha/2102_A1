@@ -224,7 +224,10 @@ const handleFilledRows = (s: State) => {
 };
 
 const rotateShape = (shape: Shape): Shape => {
-  // TODO: Check for 2x2 block shape, do not rotate
+  if (shape.excludeRotation) {
+    return shape; // Do not rotate if marked to exclude rotation
+  }
+
   const newPositions = shape.positions.map((pos) => ({
     xPos: -pos.yPos,
     yPos: pos.xPos,

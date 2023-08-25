@@ -26,6 +26,7 @@ type BlockPosition = Readonly<{ xPos: number; yPos: number }>;
 type Shape = Readonly<{
   positions: ReadonlyArray<BlockPosition>;
   color: string;
+  excludeRotation?: boolean;    // To exclude rotation for the square block
 }>
 
 const tetrisShapes: Shape[] = [
@@ -55,7 +56,8 @@ const tetrisShapes: Shape[] = [
       { xPos: 0, yPos: 1 },
       { xPos: 1, yPos: 1 },
     ],
-    color: "yellow"
+    color: "yellow",
+    excludeRotation: true, // Mark the square block to exclude rotation
   },
   {
     // 2
