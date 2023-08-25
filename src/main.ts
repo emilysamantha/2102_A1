@@ -124,10 +124,11 @@ function main() {
   const rotate$ = fromKey("KeyS").pipe(map(() => new Rotate()));
 
   const xRandom$ = createRngStreamFromSource(gameClock$)(new Date().getTime());
-  const shapeIndexRandom$ = createRngStreamFromSource(gameClock$)(new Date().getTime());
+  const shapeIndexRandom$ = createRngStreamFromSource(gameClock$)(new Date().getTime() + 1);
+  const rotationIndexRandom$ = createRngStreamFromSource(gameClock$)(new Date().getTime() + 2);
 
   // Merge all streams
-  const source$ = merge(left$, right$, rotate$, zip(xRandom$, shapeIndexRandom$))
+  const source$ = merge(left$, right$, rotate$, zip(xRandom$, shapeIndexRandom$, rotationIndexRandom$))
     .pipe(
       scan(reduceState, initialState),
     )

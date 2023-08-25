@@ -15,8 +15,8 @@ const initialState: State = {
   currScore: 0,
   highScore: 0,
   level: 0,
-  movingShapePosition: { xPos: 4, yPos: 0 }, // TODO: Replace with random position
   movingShape: tetrisShapes[0], // TODO: Replace with random shape
+  movingShapePosition: { xPos: 4, yPos: 0 }, // TODO: Replace with random position
   movingShapeIndex: 0, // TODO: Replace with random index
   blockFilled: Array.from({ length: Constants.GRID_HEIGHT }, () =>
     Array(Constants.GRID_WIDTH).fill(false)
@@ -29,7 +29,7 @@ const initialState: State = {
 // State transducer
 const reduceState: (
   s: State,
-  action: Move | Rotate | [number, number]
+  action: Move | Rotate | [number, number, number]
 ) => State = (s, action) =>
   action instanceof Move
     ? // Move right
@@ -109,7 +109,7 @@ const isCollision = (
  * @param s Current state
  * @returns Updated state
  */
-const tick = (s: State, randomShape: [number, number]) => {
+const tick = (s: State, randomShape: [number, number, number]) => {
   // Check if the new block exceeds the top of the grid
   if (
     s.movingShapePosition.yPos === 0 &&
@@ -173,8 +173,13 @@ const tick = (s: State, randomShape: [number, number]) => {
     const randomShapeIndex = Math.floor(
       ((randomShape[1] + 1) / 2) * tetrisShapes.length
     );
+    const randomShapeRotationIndex = Math.floor(
+      ((randomShape[2] + 1) / 2) * 4 + 1
+    )
+    const rotations = Array.from({ length: randomShapeRotationIndex });
+    const newRotatedShape = rotations.reduce((accShape, _) => rotateShape(accShape as Shape), tetrisShapes[randomShapeIndex] as Shape)
     const newShapePosition = {
-      xPos: randomX,
+      xPos: safeXPos(randomX, tetrisShapes[randomShapeIndex]),
       yPos: 0,
     };
 
@@ -182,8 +187,8 @@ const tick = (s: State, randomShape: [number, number]) => {
       ...s,
       blockFilled: newBlockFilled,
       blockFilledColor: newBlockFilledColor,
+      movingShape: newRotatedShape as Shape,
       movingShapePosition: newShapePosition,
-      movingShape: tetrisShapes[randomShapeIndex],
       movingShapeIndex: randomShapeIndex,
     });
   }
@@ -235,5 +240,16 @@ const rotateShape = (shape: Shape): Shape => {
   return {
     ...shape,
     positions: newPositions,
-  };
+  } as Shape;
+};
+
+const safeXPos = (randomX: number, shape: Shape) => {
+  const maxSafeXPos = Constants.GRID_WIDTH - shape.widthFromCenterToEnd;
+  const minSafeXPos = shape.widthFromCenterToStart;
+
+  return randomX >= minSafeXPos
+    ? randomX <= maxSafeXPos
+      ? randomX
+      : maxSafeXPos
+    : minSafeXPos;
 };
