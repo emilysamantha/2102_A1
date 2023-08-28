@@ -1,6 +1,7 @@
 export { initialState, reduceState, tick };
 
 import {
+  Block,
   BlockPosition,
   Constants,
   Move,
@@ -16,9 +17,9 @@ const initialState: State = {
   highScore: 0,
   level: 0,
   numLinesCleared: 0,
-  movingShape: tetrisShapes[0],                   // TODO: Replace with random shape
-  movingShapePosition: { xPos: 4, yPos: 0 },      // TODO: Replace with random position
-  nextShape: tetrisShapes[6],                     // TODO: Replace with random shape
+  movingShape: tetrisShapes[0], // TODO: Replace with random shape
+  movingShapePosition: { xPos: 4, yPos: 0 }, // TODO: Replace with random position
+  nextShape: tetrisShapes[6], // TODO: Replace with random shape
   blockFilled: Array.from({ length: Constants.GRID_HEIGHT }, () =>
     Array(Constants.GRID_WIDTH).fill(false)
   ),
@@ -33,57 +34,8 @@ const reduceState: (
   action: Move | Rotate | [number, number, number]
 ) => State = (s, action) =>
   action instanceof Move
-    ? // Move right
-      action.direction === 1
-      ? {
-          ...s,
-          movingShapePosition: {
-            ...s.movingShapePosition,
-            xPos:
-              // If the shape is at the right edge of the grid, do not move
-              s.movingShape.positions.some(
-                ({ xPos: xShift }) =>
-                  s.movingShapePosition.xPos + xShift + 1 >=
-                  Constants.GRID_WIDTH
-              ) ||
-              // or if moving the shape to the right collides with a fixed block, do not move
-              s.movingShape.positions.some(({ xPos: xShift, yPos: yShift }) =>
-                isCollision(
-                  {
-                    xPos: s.movingShapePosition.xPos + xShift + 1,
-                    yPos: s.movingShapePosition.yPos + yShift,
-                  },
-                  s.blockFilled
-                )
-              )
-                ? 
-                  s.movingShapePosition.xPos        // Do not move
-                : s.movingShapePosition.xPos + 1,   // Move right
-          },
-        }
-      : // Move left
-        {
-          ...s,
-          movingShapePosition: {
-            ...s.movingShapePosition,
-            xPos:
-              // If the shape is at the left edge of the grid, do not move
-              s.movingShape.positions.some(
-                ({ xPos: xShift }) =>
-                  s.movingShapePosition.xPos + xShift - 1 < 0
-              ) ||
-              // or if moving the shape to the left collides with a fixed block, do not move
-              s.movingShape.positions.some(({ xPos: xShift, yPos: yShift }) => isCollision(
-                {
-                  xPos: s.movingShapePosition.xPos + xShift - 1,
-                  yPos: s.movingShapePosition.yPos + yShift,
-                },
-                s.blockFilled
-              ))
-                ? s.movingShapePosition.xPos
-                : s.movingShapePosition.xPos - 1,
-          },
-        }
+    ? // Move
+      { ...s, movingShapePosition: moveShape(s, action.direction) }
     : // Rotate
     action instanceof Rotate
     ? {
@@ -126,7 +78,7 @@ const tick = (s: State, randomShape: [number, number, number]) => {
     };
   }
   // Test
-  if (s.gameEnd) console.log("Game end, yPos === 0 and collision")
+  if (s.gameEnd) console.log("Game end, yPos === 0 and collision");
 
   // Move the moving shape down
   // If moving shape collides with a fixed block or the bottom of the grid
@@ -141,7 +93,7 @@ const tick = (s: State, randomShape: [number, number, number]) => {
     // TODO: Check if yPos is less than 0
     if (s.movingShape.positions.some(({ yPos }) => newY + yPos < 0)) {
       // Test
-      console.log("Game end, yPos < 0")
+      console.log("Game end, yPos < 0");
       return {
         ...s,
         gameEnd: true,
@@ -232,6 +184,33 @@ const tick = (s: State, randomShape: [number, number, number]) => {
   };
 };
 
+// Function to move the moving shape left or right
+const moveShape = (s: State, moveAmount: number) => {
+  return {
+    ...s.movingShapePosition,
+    xPos:
+      // If the shape is at the edge of the grid, do not move
+      s.movingShape.positions.some(
+        ({ xPos: xShift }) =>
+          s.movingShapePosition.xPos + xShift + moveAmount < 0 ||
+          s.movingShapePosition.xPos + xShift + moveAmount >=
+            Constants.GRID_WIDTH
+      ) ||
+      // or if moving the shape collides with a fixed block, do not move
+      s.movingShape.positions.some(({ xPos: xShift, yPos: yShift }) =>
+        isCollision(
+          {
+            xPos: s.movingShapePosition.xPos + xShift + moveAmount,
+            yPos: s.movingShapePosition.yPos + yShift,
+          },
+          s.blockFilled
+        )
+      )
+        ? s.movingShapePosition.xPos // Do not move
+        : s.movingShapePosition.xPos + moveAmount, // Move right
+  };
+};
+
 // Function to check if a row is filled
 const isRowFilled = (row: ReadonlyArray<Boolean>) => {
   return row.filter((bool) => bool).length === Constants.GRID_WIDTH;
@@ -241,7 +220,8 @@ const isRowFilled = (row: ReadonlyArray<Boolean>) => {
 const handleFilledRows = (s: State) => {
   // Return the state with filled rows removed from the blockFilled array
   const addedScore = s.blockFilled.reduce(
-    (acc, row) => (isRowFilled(row) ? acc + Constants.GRID_WIDTH : acc), 0
+    (acc, row) => (isRowFilled(row) ? acc + Constants.GRID_WIDTH : acc),
+    0
   );
   const newScore = s.currScore + addedScore;
 
@@ -266,16 +246,17 @@ const handleFilledRows = (s: State) => {
     ),
     blockFilledColor: s.blockFilled.reduce(
       (acc, row, index) =>
-        isRowFilled(row) ?
-          // Create a new row of "" at the top of the grid, shifting the rest of the rows down
-          [Array.from({ length: Constants.GRID_WIDTH }, () => ""), ...acc]
+        isRowFilled(row)
+          ? // Create a new row of "" at the top of the grid, shifting the rest of the rows down
+            [Array.from({ length: Constants.GRID_WIDTH }, () => ""), ...acc]
           : // Keep the row as is
-          [...acc, s.blockFilledColor[index]],
-          [] as ReadonlyArray<ReadonlyArray<String>>
-    )
+            [...acc, s.blockFilledColor[index]],
+      [] as ReadonlyArray<ReadonlyArray<String>>
+    ),
   };
 };
 
+// Function to rotate the moving shape
 const rotateShape = (
   movingShapePosition: BlockPosition,
   shape: Shape

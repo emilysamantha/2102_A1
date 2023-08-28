@@ -138,25 +138,26 @@ function main() {
     rotate$,
     zip(xRandom$, shapeIndexRandom$, rotationIndexRandom$)
   )
-    .pipe(scan(reduceState, initialState));
+    .pipe(scan(reduceState, initialState))
+    .subscribe((s: State) => {
+      render(s);
 
-  const level$ = source$.pipe(map((s) => s.level), distinctUntilChanged());
+      if (s.gameEnd) {
+        // show(gameover);
+      } else {
+        
+        hide(gameover);
+      }
+    });
+
+  // const level$ = source$.pipe(map((s) => s.level), distinctUntilChanged());
 
   // const gameClock$ = level$.pipe(
   //   switchMap((level) =>
   //     interval(Constants.TICK_RATE_MS - level * 10) // Adjust the interval based on the level
   //   )
   // );
-    // .subscribe((s: State) => {
-    //   render(s);
-
-    //   if (s.gameEnd) {
-    //     // show(gameover);
-    //   } else {
-        
-    //     hide(gameover);
-    //   }
-    // });
+   
 }
 
 
