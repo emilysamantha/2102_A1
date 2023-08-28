@@ -85,7 +85,7 @@ function main() {
             width: `${Block.WIDTH}`,
             x: `${Block.WIDTH * x}`,
             y: `${Block.HEIGHT * y}`,
-            style: `fill: ${s.blockFilledColor[y][x]}`,
+            style: `fill: ${color}`,
           });
 
           svg.appendChild(block);
