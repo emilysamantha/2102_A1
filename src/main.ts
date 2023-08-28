@@ -18,7 +18,7 @@ import { map, filter, scan, distinctUntilChanged } from "rxjs/operators";
 import { Constants, Viewport, Key, Block, State, Move, Rotate } from "./types";
 import { RNG } from "./util";
 import { initialState, reduceState, tick } from "./state";
-import { createSvgElement, hide, show } from "./view";
+import { createSvgElement, hide, show, showGameOver } from "./view";
 
 /**
  * This is the function called on page load. Your main game loop
@@ -53,9 +53,7 @@ function main() {
    */
   const render = (s: State) => {
     // Reset the canvas
-    svg.innerHTML =
-      '<g id="gameOver" visibility="hidden"><rect x="26" y="120" fill="white" height="48" width="149"></rect><text x="36" y="150">Game Over</text></g>';
-    // FIXME: Game Over screen is not showing
+    svg.innerHTML = "";
 
     // Reset the preview canvas
     preview.innerHTML = "";
@@ -78,9 +76,13 @@ function main() {
             width: `${Block.WIDTH}`,
             x: `${Block.WIDTH * x}`,
             y: `${Block.HEIGHT * y}`,
-            style: `fill: ${s.blockFilledColor[y][x] !== null ? s.blockFilledColor[y][x] : "white"}`, 
+            style: `fill: ${
+              s.blockFilledColor[y][x] !== null
+                ? s.blockFilledColor[y][x]
+                : "white"
+            }`,
           });
-               
+
           svg.appendChild(block);
         }
       })
@@ -95,12 +97,12 @@ function main() {
         x: `${Block.WIDTH * (s.movingShapePosition.xPos + xPos)}`,
         y: `${Block.HEIGHT * (s.movingShapePosition.yPos + yPos)}`,
         style: `fill: ${s.movingShape.color}`,
-      }); 
+      });
       svg.appendChild(block);
     });
 
     // Render the next shape in the preview canvas
-    const cubePreview = s.nextShape.positions.forEach((pos) => {
+    s.nextShape.positions.forEach((pos) => {
       const { xPos, yPos } = pos;
       const block = createSvgElement(preview.namespaceURI, "rect", {
         height: `${Block.HEIGHT}`,
@@ -108,7 +110,7 @@ function main() {
         x: `${Block.WIDTH * (3 + xPos)}`,
         y: `${Block.HEIGHT * (1 + yPos)}`,
         style: `fill: ${s.nextShape.color}`,
-      }); 
+      });
       preview.appendChild(block);
     });
   };
@@ -143,9 +145,13 @@ function main() {
       render(s);
 
       if (s.gameEnd) {
-        // show(gameover);
+        // Test
+        console.log("Show game over called");
+
+        showGameOver(svg);
+
+        // TODO: onfinish function
       } else {
-        
         hide(gameover);
       }
     });
@@ -157,9 +163,7 @@ function main() {
   //     interval(Constants.TICK_RATE_MS - level * 10) // Adjust the interval based on the level
   //   )
   // );
-   
 }
-
 
 function createRngStreamFromSource<T>(source$: Observable<T>) {
   return function createRngStream(seed: number): Observable<number> {

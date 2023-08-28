@@ -1,7 +1,6 @@
 export { initialState, reduceState, tick };
 
 import {
-  Block,
   BlockPosition,
   Constants,
   Move,
@@ -11,6 +10,9 @@ import {
   tetrisShapes,
 } from "./types";
 
+/**
+ * Initial state
+ */
 const initialState: State = {
   gameEnd: false,
   currScore: 0,
@@ -28,7 +30,13 @@ const initialState: State = {
   ),
 } as const;
 
-// State transducer
+/**
+ * State transducer
+ *
+ * @param s Current state
+ * @param action The action to perform
+ * @returns Updated state
+ */
 const reduceState: (
   s: State,
   action: Move | Rotate | [number, number, number]
@@ -44,11 +52,17 @@ const reduceState: (
       }
     : tick(s, action);
 
-// Function to check if a position is a collision
-const isCollision = (
+/**
+ * Function to check if a position is a collision
+ *
+ * @param pos the position to check
+ * @param blockFilled 2D array of booleans representing the fixed blocks
+ * @returns whether the position is a collision
+ */
+const isCollision: (
   pos: BlockPosition,
   blockFilled: ReadonlyArray<ReadonlyArray<Boolean>>
-) => {
+) => Boolean = (pos, blockFilled) => {
   return (
     // Checks if the shape is at the bottom of the grid or
     pos.yPos >= Constants.GRID_HEIGHT ||
@@ -58,7 +72,7 @@ const isCollision = (
 };
 
 /**
- * Updates the state by proceeding with one time step.
+ * Function which updates the state by proceeding with one time step.
  *
  * @param s Current state
  * @returns Updated state
@@ -67,18 +81,23 @@ const tick = (s: State, randomShape: [number, number, number]) => {
   // Check if the new block exceeds the top of the grid
   if (
     s.movingShapePosition.yPos === 0 &&
-    isCollision(
-      { xPos: s.movingShapePosition.xPos, yPos: s.movingShapePosition.yPos },
-      s.blockFilled
+    s.movingShape.positions.some(({ xPos: xShift, yPos: yShift }) =>
+      isCollision(
+        {
+          xPos: s.movingShapePosition.xPos + xShift,
+          yPos: s.movingShapePosition.yPos + yShift,
+        },
+        s.blockFilled
+      )
     )
   ) {
+    // Test
+    if (s.gameEnd) console.log("Game end, yPos === 0 and collision");
     return {
       ...s,
       gameEnd: true,
     };
   }
-  // Test
-  if (s.gameEnd) console.log("Game end, yPos === 0 and collision");
 
   // Move the moving shape down
   // If moving shape collides with a fixed block or the bottom of the grid
@@ -91,14 +110,14 @@ const tick = (s: State, randomShape: [number, number, number]) => {
     )
   ) {
     // TODO: Check if yPos is less than 0
-    if (s.movingShape.positions.some(({ yPos }) => newY + yPos < 0)) {
-      // Test
-      console.log("Game end, yPos < 0");
-      return {
-        ...s,
-        gameEnd: true,
-      };
-    }
+    // if (s.movingShape.positions.some(({ yPos }) => newY + yPos < 0)) {
+    //   // Test
+    //   console.log("Game end, yPos < 0");
+    //   return {
+    //     ...s,
+    //     gameEnd: true,
+    //   };
+    // }
     // Update the blockFilled array
     const newBlockFilled = s.movingShape.positions.reduce(
       (accBlockFilled, { xPos: xShift, yPos: yShift }) => {

@@ -33,3 +33,29 @@ export const createSvgElement = (
   Object.entries(props).forEach(([k, v]) => elem.setAttribute(k, v));
   return elem;
 };
+
+export const showGameOver = (svg: SVGGraphicsElement & HTMLElement) => {
+  const gameOverGroup = createSvgElement(svg.namespaceURI, "g", {
+    id: "gameOver",
+    visibility: "visible", // Change this to "visible" if you want to show the message
+  });
+
+  const rect = createSvgElement(svg.namespaceURI, "rect", {
+    x: "26",
+    y: "120",
+    fill: "white",
+    height: "48",
+    width: "149",
+  });
+
+  const text = createSvgElement(svg.namespaceURI, "text", {
+    x: "36",
+    y: "150",
+  });
+  text.textContent = "Game Over";
+
+  gameOverGroup.appendChild(rect);
+  gameOverGroup.appendChild(text);
+
+  svg.appendChild(gameOverGroup);
+}
