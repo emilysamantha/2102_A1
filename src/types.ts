@@ -41,7 +41,7 @@ const tetrisShapes: Shape[] = [
     positions: [
       { xPos: -1, yPos: 0 },   
       { xPos: 0, yPos: 0 }, // Center
-      { xPos: 1, yPos: 0 },
+      { xPos: 1, yPos: 0 }, 
       { xPos: 2, yPos: 0 },
     ],
     widthFromCenterToEnd: 2,
@@ -162,7 +162,6 @@ type State = Readonly<{
   movingShape: Shape | null;
   movingShapePosition: BlockPosition;                   // To render the moving shape
   nextShape: Shape;                                     // To render the next shape
-  blockFilled: ReadonlyArray<ReadonlyArray<Boolean>>;   // For collision detection
   blockFilledColor: ReadonlyArray<ReadonlyArray<String>>; // To render the fixed blocks
 }>;
 

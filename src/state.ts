@@ -23,9 +23,6 @@ const initialState: State = {
   movingShape: null, 
   movingShapePosition: { xPos: 4, yPos: 0 }, // Placeholder position
   nextShape: tetrisShapes[6], // Placeholder shape
-  blockFilled: Array.from({ length: Constants.GRID_HEIGHT }, () =>
-    Array(Constants.GRID_WIDTH).fill(false)
-  ),
   blockFilledColor: Array.from({ length: Constants.GRID_HEIGHT }, () =>
     Array(Constants.GRID_WIDTH).fill("")
   ),
@@ -80,13 +77,13 @@ const reduceState: (
  */
 const isCollision: (
   pos: BlockPosition,
-  blockFilled: ReadonlyArray<ReadonlyArray<Boolean>>
-) => Boolean = (pos, blockFilled) => {
+  blockFilledColor: ReadonlyArray<ReadonlyArray<String>>
+) => Boolean = (pos, blockFilledColor) => {
   return (
     // Checks if the shape is at the bottom of the grid or
     pos.yPos >= Constants.GRID_HEIGHT ||
     // collides with a fixed block
-    blockFilled[pos.yPos >= 0 ? pos.yPos : 0][pos.xPos]
+    blockFilledColor[pos.yPos >= 0 ? pos.yPos : 0][pos.xPos] !== ""
   );
 };
 
@@ -135,7 +132,7 @@ const tick = (s: State, randomShape: [number, number, number]) => {
           xPos: s.movingShapePosition.xPos + xShift,
           yPos: s.movingShapePosition.yPos + yShift,
         },
-        s.blockFilled
+        s.blockFilledColor
       )
     )
   ) {
@@ -154,33 +151,10 @@ const tick = (s: State, randomShape: [number, number, number]) => {
 
   if (
     s.movingShape?.positions.some(({ xPos, yPos }) =>
-      isCollision({ xPos: x + xPos, yPos: newY + yPos }, s.blockFilled)
+      isCollision({ xPos: x + xPos, yPos: newY + yPos }, s.blockFilledColor)
     )
   ) {
   
-    // Update the blockFilled array
-    const newBlockFilled = s.movingShape.positions.reduce(
-      (accBlockFilled, { xPos: xShift, yPos: yShift }) => {
-        return [
-          ...accBlockFilled.slice(
-            0,
-            Math.max(0, s.movingShapePosition.yPos + yShift)
-          ),
-          [
-            ...accBlockFilled[Math.max(0, newY + yShift - 1)].slice(
-              0,
-              x + xShift
-            ),
-            true,
-            ...accBlockFilled[Math.max(0, newY + yShift - 1)].slice(
-              x + xShift + 1
-            ),
-          ],
-          ...accBlockFilled.slice(Math.max(0, newY + yShift)),
-        ];
-      },
-      s.blockFilled
-    );
 
     // Update the blockFilledColor array
     const newBlockFilledColor = s.movingShape.positions.reduce(
@@ -228,7 +202,6 @@ const tick = (s: State, randomShape: [number, number, number]) => {
 
     return handleFilledRows({
       ...s,
-      blockFilled: newBlockFilled,
       blockFilledColor: newBlockFilledColor,
       movingShape: s.nextShape,
       nextShape: newRotatedShape as Shape,
@@ -262,7 +235,7 @@ const moveShape = (s: State, moveAmount: number) => {
             xPos: s.movingShapePosition.xPos + xShift + moveAmount,
             yPos: s.movingShapePosition.yPos + yShift,
           },
-          s.blockFilled
+          s.blockFilledColor
         )
       )
         ? s.movingShapePosition.xPos // Do not move
@@ -271,14 +244,14 @@ const moveShape = (s: State, moveAmount: number) => {
 };
 
 // Function to check if a row is filled
-const isRowFilled = (row: ReadonlyArray<Boolean>) => {
-  return row.filter((bool) => bool).length === Constants.GRID_WIDTH;
+const isRowFilled = (row: ReadonlyArray<String>) => {
+  return row.filter((color) => color !== "").length === Constants.GRID_WIDTH;
 };
 
 // Function to handle filled rows
 const handleFilledRows = (s: State) => {
   // Return the state with filled rows removed from the blockFilled array
-  const addedScore = s.blockFilled.reduce(
+  const addedScore = s.blockFilledColor.reduce(
     (acc, row) => (isRowFilled(row) ? acc + Constants.GRID_WIDTH : acc),
     0
   );
@@ -294,16 +267,7 @@ const handleFilledRows = (s: State) => {
     highScore: newScore > s.highScore ? newScore : s.highScore,
     numLinesCleared: (s.numLinesCleared + newLinesCleared) % 10,
     level: newLevel,
-    blockFilled: s.blockFilled.reduce(
-      (acc, row) =>
-        isRowFilled(row)
-          ? // Create a new row of false at the top of the grid, shifting the rest of the rows down
-            [Array.from({ length: Constants.GRID_WIDTH }, () => false), ...acc]
-          : // Keep the row as is
-            [...acc, row],
-      [] as ReadonlyArray<ReadonlyArray<Boolean>>
-    ),
-    blockFilledColor: s.blockFilled.reduce(
+    blockFilledColor: s.blockFilledColor.reduce(
       (acc, row, index) =>
         isRowFilled(row)
           ? // Create a new row of "" at the top of the grid, shifting the rest of the rows down
