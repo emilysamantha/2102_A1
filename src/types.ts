@@ -1,4 +1,4 @@
-export {Viewport, Constants, Block, Move, Rotate, tetrisShapes}
+export {Viewport, Constants, Block, Move, Rotate, Restart, tetrisShapes}
 export type {BlockPosition, State, Key, Event, Shape }
 
 // Constants
@@ -159,7 +159,7 @@ type State = Readonly<{
   highScore: number;                                    // To keep track of the high score
   level: number;                                        // To keep track of the level, after 10 lines are cleared, level up
   numLinesCleared: number;                              // To keep track of the number of lines cleared 
-  movingShape: Shape;
+  movingShape: Shape | null;
   movingShapePosition: BlockPosition;                   // To render the moving shape
   nextShape: Shape;                                     // To render the next shape
   blockFilled: ReadonlyArray<ReadonlyArray<Boolean>>;   // For collision detection
@@ -175,5 +175,9 @@ class Move {
 }
 
 class Rotate {
+  constructor() {}
+}
+
+class Restart {
   constructor() {}
 }

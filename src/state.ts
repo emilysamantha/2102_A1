@@ -4,6 +4,7 @@ import {
   BlockPosition,
   Constants,
   Move,
+  Restart,
   Rotate,
   Shape,
   State,
@@ -19,9 +20,9 @@ const initialState: State = {
   highScore: 0,
   level: 0,
   numLinesCleared: 0,
-  movingShape: tetrisShapes[0], // TODO: Replace with random shape
-  movingShapePosition: { xPos: 4, yPos: 0 }, // TODO: Replace with random position
-  nextShape: tetrisShapes[6], // TODO: Replace with random shape
+  movingShape: null, 
+  movingShapePosition: { xPos: 4, yPos: 0 }, // Placeholder position
+  nextShape: tetrisShapes[6], // Placeholder shape
   blockFilled: Array.from({ length: Constants.GRID_HEIGHT }, () =>
     Array(Constants.GRID_WIDTH).fill(false)
   ),
@@ -39,7 +40,7 @@ const initialState: State = {
  */
 const reduceState: (
   s: State,
-  action: Move | Rotate | [number, number, number]
+  action: Move | Rotate | Restart | [number, number, number]
 ) => State = (s, action) =>
   action instanceof Move
     ? // Move
@@ -48,9 +49,27 @@ const reduceState: (
     action instanceof Rotate
     ? {
         ...s,
-        movingShape: rotateShape(s.movingShapePosition, s.movingShape),
+        movingShape: s.movingShape? rotateShape(s.movingShapePosition, s.movingShape) : s.movingShape,
       }
-    : tick(s, action);
+    : 
+    action instanceof Restart
+    ? {
+      ...s,
+      gameEnd: false,
+      currScore: 0,
+      level: 0,
+      numLinesCleared: 0,
+      movingShape: null, // null movingShape indicates the start of the game
+      movingShapePosition: { xPos: 4, yPos: 0 }, // placeholder position
+      nextShape: tetrisShapes[6], // placeholder shape
+      blockFilled: Array.from({ length: Constants.GRID_HEIGHT }, () =>
+        Array(Constants.GRID_WIDTH).fill(false)
+      ),
+      blockFilledColor: Array.from({ length: Constants.GRID_HEIGHT }, () =>
+        Array(Constants.GRID_WIDTH).fill("")
+      ),
+    } :
+    tick(s, action);
 
 /**
  * Function to check if a position is a collision
@@ -78,10 +97,39 @@ const isCollision: (
  * @returns Updated state
  */
 const tick = (s: State, randomShape: [number, number, number]) => {
+  // If the s.movingShape is null (start of the game), generate a new shape
+  if (s.movingShape === null) {
+    const randomX = Math.floor(
+      ((randomShape[0] + 1) / 2) * Constants.GRID_WIDTH
+    );
+    const randomShapeIndex = Math.floor(
+      ((randomShape[1] + 1) / 2) * tetrisShapes.length
+    );
+    const randomShapeRotationIndex = Math.floor(
+      ((randomShape[2] + 1) / 2) * 4 + 1
+    );
+    const rotations = Array.from({ length: randomShapeRotationIndex });
+    const newShapePosition = {
+      xPos: safeXPos(randomX, tetrisShapes[randomShapeIndex]),
+      yPos: 0,
+    };
+    const newRotatedShape = rotations.reduce(
+      (accShape, _) => rotateShape(newShapePosition, accShape as Shape),
+      tetrisShapes[randomShapeIndex] as Shape
+    );
+
+    return {
+      ...s,
+      movingShape: newRotatedShape as Shape,
+      movingShapePosition: newShapePosition,
+      nextShape: tetrisShapes[randomShapeIndex + 1 % tetrisShapes.length],
+    };
+    }
+
   // Check if the new block exceeds the top of the grid
   if (
     s.movingShapePosition.yPos === 0 &&
-    s.movingShape.positions.some(({ xPos: xShift, yPos: yShift }) =>
+    s.movingShape?.positions.some(({ xPos: xShift, yPos: yShift }) =>
       isCollision(
         {
           xPos: s.movingShapePosition.xPos + xShift,
@@ -105,19 +153,11 @@ const tick = (s: State, randomShape: [number, number, number]) => {
   const x = s.movingShapePosition.xPos;
 
   if (
-    s.movingShape.positions.some(({ xPos, yPos }) =>
+    s.movingShape?.positions.some(({ xPos, yPos }) =>
       isCollision({ xPos: x + xPos, yPos: newY + yPos }, s.blockFilled)
     )
   ) {
-    // TODO: Check if yPos is less than 0
-    // if (s.movingShape.positions.some(({ yPos }) => newY + yPos < 0)) {
-    //   // Test
-    //   console.log("Game end, yPos < 0");
-    //   return {
-    //     ...s,
-    //     gameEnd: true,
-    //   };
-    // }
+  
     // Update the blockFilled array
     const newBlockFilled = s.movingShape.positions.reduce(
       (accBlockFilled, { xPos: xShift, yPos: yShift }) => {
@@ -155,7 +195,7 @@ const tick = (s: State, randomShape: [number, number, number]) => {
               0,
               x + xShift
             ),
-            s.movingShape.color,
+            s.movingShape ? s.movingShape.color : "",
             ...accBlockFilledColor[Math.max(0, newY + yShift - 1)].slice(
               x + xShift + 1
             ),
@@ -209,14 +249,14 @@ const moveShape = (s: State, moveAmount: number) => {
     ...s.movingShapePosition,
     xPos:
       // If the shape is at the edge of the grid, do not move
-      s.movingShape.positions.some(
+      s.movingShape?.positions.some(
         ({ xPos: xShift }) =>
           s.movingShapePosition.xPos + xShift + moveAmount < 0 ||
           s.movingShapePosition.xPos + xShift + moveAmount >=
             Constants.GRID_WIDTH
       ) ||
       // or if moving the shape collides with a fixed block, do not move
-      s.movingShape.positions.some(({ xPos: xShift, yPos: yShift }) =>
+      s.movingShape?.positions.some(({ xPos: xShift, yPos: yShift }) =>
         isCollision(
           {
             xPos: s.movingShapePosition.xPos + xShift + moveAmount,

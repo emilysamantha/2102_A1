@@ -89,14 +89,14 @@ function main() {
     );
 
     // Render the moving shape
-    s.movingShape.positions.forEach((pos) => {
+    s.movingShape?.positions.forEach((pos) => {
       const { xPos, yPos } = pos;
       const block = createSvgElement(svg.namespaceURI, "rect", {
         height: `${Block.HEIGHT}`,
         width: `${Block.WIDTH}`,
         x: `${Block.WIDTH * (s.movingShapePosition.xPos + xPos)}`,
         y: `${Block.HEIGHT * (s.movingShapePosition.yPos + yPos)}`,
-        style: `fill: ${s.movingShape.color}`,
+        style: `fill: ${s.movingShape?.color}`,
       });
       svg.appendChild(block);
     });
