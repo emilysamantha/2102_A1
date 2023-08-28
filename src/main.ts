@@ -77,19 +77,15 @@ function main() {
     highScoreText.innerHTML = `${s.highScore}`;
 
     // Render fixed blocks
-    s.blockFilled.forEach((row, y) =>
-      row.forEach((bool, x) => {
-        if (bool) {
+    s.blockFilledColor.forEach((row, y) =>
+      row.forEach((color, x) => {
+        if (color !== "") {
           const block = createSvgElement(svg.namespaceURI, "rect", {
             height: `${Block.HEIGHT}`,
             width: `${Block.WIDTH}`,
             x: `${Block.WIDTH * x}`,
             y: `${Block.HEIGHT * y}`,
-            style: `fill: ${
-              s.blockFilledColor[y][x] !== null
-                ? s.blockFilledColor[y][x]
-                : "white"
-            }`,
+            style: `fill: ${s.blockFilledColor[y][x]}`,
           });
 
           svg.appendChild(block);
@@ -156,10 +152,9 @@ function main() {
     .pipe(scan(reduceState, initialState))
     .subscribe((s: State) => {
       if (s.movingShape !== null) {
-        console.log("Rendering")
+        console.log("Rendering");
         render(s);
       }
-      
 
       if (s.gameEnd) {
         // Test
@@ -167,8 +162,10 @@ function main() {
 
         showGameOver(svg);
 
-        // // Emit the restart signal after the delay
+        // Emit the restart signal after the delay
         restartSignal$.next(0);
+
+        // TODO:
         // Display game over screen after waiting for 3 seconds
         // setTimeout(() => {
         //   console.log("Show game over called");
@@ -182,6 +179,8 @@ function main() {
       }
     });
 
+  // const level$ = source$.pipe(map((s) => s.level), distinctUntilChanged());
+
   const restartSubscription = restart$.subscribe((restart) => {
     console.log("Restart signal received. Restarting the game...");
     // Perform the restart logic using the restart instance
@@ -189,8 +188,6 @@ function main() {
   });
 
   restartSubscription.unsubscribe();
-
-  // const level$ = source$.pipe(map((s) => s.level), distinctUntilChanged());
 
   // const gameClock$ = level$.pipe(
   //   switchMap((level) =>
