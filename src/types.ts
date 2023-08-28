@@ -10,9 +10,10 @@ const Viewport = {
 } as const;
 
 const Constants = {
-  TICK_RATE_MS: 200,
+  TICK_RATE_MS: 300,
   GRID_WIDTH: 10,
   GRID_HEIGHT: 20,
+  LEVEL_UP_POINTS: 50,
 } as const;
 
 const Block = {
@@ -156,7 +157,8 @@ type State = Readonly<{
   gameEnd: boolean;                                     // To end the game
   currScore: number;                                    // To keep track of the score
   highScore: number;                                    // To keep track of the high score
-  level: number;                                        // To keep track of the level
+  level: number;                                        // To keep track of the level, after 10 lines are cleared, level up
+  numLinesCleared: number;                              // To keep track of the number of lines cleared 
   movingShape: Shape;
   movingShapePosition: BlockPosition;                   // To render the moving shape
   nextShape: Shape;                                     // To render the next shape

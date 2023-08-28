@@ -15,9 +15,10 @@ const initialState: State = {
   currScore: 0,
   highScore: 0,
   level: 0,
-  movingShape: tetrisShapes[0], // TODO: Replace with random shape
-  movingShapePosition: { xPos: 4, yPos: 0 }, // TODO: Replace with random position
-  nextShape: tetrisShapes[6], // TODO: Replace with random shape
+  numLinesCleared: 0,
+  movingShape: tetrisShapes[0],                   // TODO: Replace with random shape
+  movingShapePosition: { xPos: 4, yPos: 0 },      // TODO: Replace with random position
+  nextShape: tetrisShapes[6],                     // TODO: Replace with random shape
   blockFilled: Array.from({ length: Constants.GRID_HEIGHT }, () =>
     Array(Constants.GRID_WIDTH).fill(false)
   ),
@@ -55,15 +56,9 @@ const reduceState: (
                   s.blockFilled
                 )
               )
-                ? // isCollision(
-                  //   {
-                  //     xPos: s.movingShapePosition.xPos + 1,
-                  //     yPos: s.movingShapePosition.yPos,
-                  //   },
-                  //   s.blockFilled
-                  // )
-                  s.movingShapePosition.xPos
-                : s.movingShapePosition.xPos + 1,
+                ? 
+                  s.movingShapePosition.xPos        // Do not move
+                : s.movingShapePosition.xPos + 1,   // Move right
           },
         }
       : // Move left
@@ -85,13 +80,6 @@ const reduceState: (
                 },
                 s.blockFilled
               ))
-              // isCollision(
-              //   {
-              //     xPos: s.movingShapePosition.xPos - 1,
-              //     yPos: s.movingShapePosition.yPos,
-              //   },
-              //   s.blockFilled
-              // )
                 ? s.movingShapePosition.xPos
                 : s.movingShapePosition.xPos - 1,
           },
@@ -137,6 +125,8 @@ const tick = (s: State, randomShape: [number, number, number]) => {
       gameEnd: true,
     };
   }
+  // Test
+  if (s.gameEnd) console.log("Game end, yPos === 0 and collision")
 
   // Move the moving shape down
   // If moving shape collides with a fixed block or the bottom of the grid
@@ -150,6 +140,8 @@ const tick = (s: State, randomShape: [number, number, number]) => {
   ) {
     // TODO: Check if yPos is less than 0
     if (s.movingShape.positions.some(({ yPos }) => newY + yPos < 0)) {
+      // Test
+      console.log("Game end, yPos < 0")
       return {
         ...s,
         gameEnd: true,
@@ -248,14 +240,21 @@ const isRowFilled = (row: ReadonlyArray<Boolean>) => {
 // Function to handle filled rows
 const handleFilledRows = (s: State) => {
   // Return the state with filled rows removed from the blockFilled array
-  const currScore = s.blockFilled.reduce(
-    (acc, row) => (isRowFilled(row) ? acc + Constants.GRID_WIDTH : acc),
-    s.currScore
+  const addedScore = s.blockFilled.reduce(
+    (acc, row) => (isRowFilled(row) ? acc + Constants.GRID_WIDTH : acc), 0
   );
+  const newScore = s.currScore + addedScore;
+
+  const newLinesCleared = addedScore / Constants.GRID_WIDTH;
+  const addedLevel = Math.floor(newScore / Constants.LEVEL_UP_POINTS) - s.level;
+  const newLevel = s.level + addedLevel;
+
   return {
     ...s,
-    currScore: currScore,
-    highScore: currScore > s.highScore ? currScore : s.highScore,
+    currScore: newScore,
+    highScore: newScore > s.highScore ? newScore : s.highScore,
+    numLinesCleared: (s.numLinesCleared + newLinesCleared) % 10,
+    level: newLevel,
     blockFilled: s.blockFilled.reduce(
       (acc, row) =>
         isRowFilled(row)
@@ -265,6 +264,15 @@ const handleFilledRows = (s: State) => {
             [...acc, row],
       [] as ReadonlyArray<ReadonlyArray<Boolean>>
     ),
+    blockFilledColor: s.blockFilled.reduce(
+      (acc, row, index) =>
+        isRowFilled(row) ?
+          // Create a new row of "" at the top of the grid, shifting the rest of the rows down
+          [Array.from({ length: Constants.GRID_WIDTH }, () => ""), ...acc]
+          : // Keep the row as is
+          [...acc, s.blockFilledColor[index]],
+          [] as ReadonlyArray<ReadonlyArray<String>>
+    )
   };
 };
 

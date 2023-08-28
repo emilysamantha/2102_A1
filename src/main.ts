@@ -14,7 +14,7 @@
 
 import "./style.css";
 import { fromEvent, interval, merge, Observable, zip } from "rxjs";
-import { map, filter, scan } from "rxjs/operators";
+import { map, filter, scan, distinctUntilChanged } from "rxjs/operators";
 import { Constants, Viewport, Key, Block, State, Move, Rotate } from "./types";
 import { RNG } from "./util";
 import { initialState, reduceState, tick } from "./state";
@@ -138,17 +138,27 @@ function main() {
     rotate$,
     zip(xRandom$, shapeIndexRandom$, rotationIndexRandom$)
   )
-    .pipe(scan(reduceState, initialState))
-    .subscribe((s: State) => {
-      render(s);
+    .pipe(scan(reduceState, initialState));
 
-      if (s.gameEnd) {
-        // show(gameover);
-      } else {
-        hide(gameover);
-      }
-    });
+  const level$ = source$.pipe(map((s) => s.level), distinctUntilChanged());
+
+  // const gameClock$ = level$.pipe(
+  //   switchMap((level) =>
+  //     interval(Constants.TICK_RATE_MS - level * 10) // Adjust the interval based on the level
+  //   )
+  // );
+    // .subscribe((s: State) => {
+    //   render(s);
+
+    //   if (s.gameEnd) {
+    //     // show(gameover);
+    //   } else {
+        
+    //     hide(gameover);
+    //   }
+    // });
 }
+
 
 function createRngStreamFromSource<T>(source$: Observable<T>) {
   return function createRngStream(seed: number): Observable<number> {
