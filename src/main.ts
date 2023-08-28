@@ -13,9 +13,18 @@
  */
 
 import "./style.css";
-import { fromEvent, interval, merge, Observable, zip } from "rxjs";
-import { map, filter, scan, distinctUntilChanged } from "rxjs/operators";
-import { Constants, Viewport, Key, Block, State, Move, Rotate } from "./types";
+import { fromEvent, interval, merge, Observable, Subject, zip } from "rxjs";
+import { map, filter, scan, distinctUntilChanged, delay } from "rxjs/operators";
+import {
+  Constants,
+  Viewport,
+  Key,
+  Block,
+  State,
+  Move,
+  Rotate,
+  Restart,
+} from "./types";
 import { RNG } from "./util";
 import { initialState, reduceState, tick } from "./state";
 import { createSvgElement, hide, show, showGameOver } from "./view";
@@ -133,16 +142,24 @@ function main() {
     new Date().getTime() + 2
   );
 
+  const restartSignal$ = new Subject();
+  const restart$ = restartSignal$.pipe(map(() => new Restart()));
+
   // Merge all streams
   const source$ = merge(
     left$,
     right$,
     rotate$,
-    zip(xRandom$, shapeIndexRandom$, rotationIndexRandom$)
+    zip(xRandom$, shapeIndexRandom$, rotationIndexRandom$),
+    restart$
   )
     .pipe(scan(reduceState, initialState))
     .subscribe((s: State) => {
-      render(s);
+      if (s.movingShape !== null) {
+        console.log("Rendering")
+        render(s);
+      }
+      
 
       if (s.gameEnd) {
         // Test
@@ -150,11 +167,28 @@ function main() {
 
         showGameOver(svg);
 
-        // TODO: onfinish function
+        // // Emit the restart signal after the delay
+        restartSignal$.next(0);
+        // Display game over screen after waiting for 3 seconds
+        // setTimeout(() => {
+        //   console.log("Show game over called");
+        //   showGameOver(svg);
+
+        //   // Emit the restart signal after the delay
+        //   restartSignal$.next(0);
+        // }, 3000);
       } else {
         hide(gameover);
       }
     });
+
+  const restartSubscription = restart$.subscribe((restart) => {
+    console.log("Restart signal received. Restarting the game...");
+    // Perform the restart logic using the restart instance
+    // Reset the game state, hide game over screen, etc.
+  });
+
+  restartSubscription.unsubscribe();
 
   // const level$ = source$.pipe(map((s) => s.level), distinctUntilChanged());
 
