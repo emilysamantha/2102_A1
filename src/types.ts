@@ -1,4 +1,4 @@
-export {Viewport, Constants, Block, Move, Rotate, Restart, tetrisShapes}
+export {Viewport, Constants, Block, Move, Rotate, GameOver, Restart, tetrisShapes}
 export type {BlockPosition, State, Key, Event, Shape }
 
 // Constants
@@ -10,7 +10,7 @@ const Viewport = {
 } as const;
 
 const Constants = {
-  TICK_RATE_MS: 300,
+  TICK_RATE_MS: 200,
   GRID_WIDTH: 10,
   GRID_HEIGHT: 20,
   LEVEL_UP_POINTS: 50,
@@ -45,7 +45,7 @@ const tetrisShapes: Shape[] = [
       { xPos: 2, yPos: 0 },
     ],
     widthFromCenterToEnd: 2,
-    widthFromCenterToStart: 1,
+    widthFromCenterToStart: 2,
     color: "cyan",
   } as Shape,
   {
@@ -63,7 +63,7 @@ const tetrisShapes: Shape[] = [
     ],
     color: "yellow",
     widthFromCenterToEnd: 1,
-    widthFromCenterToStart: 0,
+    widthFromCenterToStart: 1,
     excludeRotation: true, // Mark the square block to exclude rotation
   } as Shape,
   {
@@ -162,7 +162,6 @@ type State = Readonly<{
   movingShape: Shape | null;
   movingShapePosition: BlockPosition;                   // To render the moving shape
   nextShape: Shape;                                     // To render the next shape
-  blockFilled: ReadonlyArray<ReadonlyArray<Boolean>>;   // For collision detection
   blockFilledColor: ReadonlyArray<ReadonlyArray<String>>; // To render the fixed blocks
 }>;
 
@@ -175,6 +174,10 @@ class Move {
 }
 
 class Rotate {
+  constructor() {}
+}
+
+class GameOver {
   constructor() {}
 }
 
