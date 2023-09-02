@@ -163,9 +163,10 @@ type State = Readonly<{
   movingShapePosition: BlockPosition;                   // To render the moving shape
   nextShape: Shape;                                     // To render the next shape
   blockFilledColor: ReadonlyArray<ReadonlyArray<String>>; // To render the fixed blocks
+  promptRestart: boolean;                               // To prompt the user to restart the game
 }>;
 
-type Key = "KeyS" | "KeyA" | "KeyD";
+type Key = "KeyS" | "KeyA" | "KeyD" | "KeyR";
 type Event = "keydown" | "keyup" | "keypress";
 
 // Action Types

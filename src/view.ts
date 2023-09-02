@@ -44,18 +44,26 @@ export const showGameOver = (svg: SVGGraphicsElement & HTMLElement) => {
     x: "26",
     y: "120",
     fill: "white",
-    height: "48",
-    width: "149",
+    height: "70",
+    width: "155",
   });
 
   const text = createSvgElement(svg.namespaceURI, "text", {
     x: "36",
     y: "150",
+    fontSize: "20",
   });
-  text.textContent = "Game Over";
+  text.textContent = "Game Over!";
+
+  const restartText = createSvgElement(svg.namespaceURI, "text", {
+    x: "36",
+    y: "175", // Adjust the y-coordinate to position the restart text
+  });
+  restartText.textContent = "Press R to Restart";
 
   gameOverGroup.appendChild(rect);
   gameOverGroup.appendChild(text);
+  gameOverGroup.appendChild(restartText); // Add the restart text to the SVG
 
   svg.appendChild(gameOverGroup);
 }

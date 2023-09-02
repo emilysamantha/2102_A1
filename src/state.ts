@@ -3,6 +3,7 @@ export { initialState, reduceState, tick };
 import {
   BlockPosition,
   Constants,
+  GameOver,
   Move,
   Restart,
   Rotate,
@@ -20,13 +21,14 @@ const initialState: State = {
   highScore: 0,
   level: 0,
   numLinesCleared: 0,
-  movingShape: null, 
+  movingShape: null,
   movingShapePosition: { xPos: 4, yPos: 0 }, // Placeholder position
   nextShape: tetrisShapes[6], // Placeholder shape
   blockFilledColor: Array.from({ length: Constants.GRID_HEIGHT }, () =>
-    Array(Constants.GRID_WIDTH).fill(""),
+    Array(Constants.GRID_WIDTH).fill("")
   ),
-  } as const;
+  promptRestart: false,
+} as const;
 
 /**
  * State transducer
@@ -37,7 +39,7 @@ const initialState: State = {
  */
 const reduceState: (
   s: State,
-  action: Move | Rotate | Restart | [number, number, number]
+  action: Move | Rotate | GameOver | Restart | [number, number, number]
 ) => State = (s, action) =>
   action instanceof Move
     ? // Move
@@ -46,35 +48,44 @@ const reduceState: (
     action instanceof Rotate
     ? {
         ...s,
-        movingShape: s.movingShape? rotateShape(s.movingShapePosition, s.movingShape) : s.movingShape,
+        movingShape: s.movingShape
+          ? rotateShape(s.movingShapePosition, s.movingShape)
+          : s.movingShape,
       }
-    : 
-    action instanceof Restart
+    : action instanceof GameOver
     ? {
-      ...s,
-      gameEnd: false,
-      currScore: 0,
-      level: 0,
-      numLinesCleared: 0,
-      movingShape: null, // null movingShape indicates the start of the game
-      movingShapePosition: { xPos: 4, yPos: 0 }, // placeholder position
-      nextShape: tetrisShapes[6], // placeholder shape
-      blockFilled: Array.from({ length: Constants.GRID_HEIGHT }, () =>
-        Array(Constants.GRID_WIDTH).fill(false)
-      ),
-      blockFilledColor: Array.from({ length: Constants.GRID_HEIGHT }, () =>
-        Array(Constants.GRID_WIDTH).fill("")
-      ),
-    } :
-    tick(s, action);
+        ...s,
+        promptRestart: true,
+      }
+    : action instanceof Restart
+    ? s.gameEnd
+      ? {
+          ...s,
+          gameEnd: false,
+          currScore: 0,
+          level: 0,
+          numLinesCleared: 0,
+          movingShape: null, // null movingShape indicates the start of the game
+          movingShapePosition: { xPos: 4, yPos: 0 }, // placeholder position
+          nextShape: tetrisShapes[6], // placeholder shape
+          blockFilled: Array.from({ length: Constants.GRID_HEIGHT }, () =>
+            Array(Constants.GRID_WIDTH).fill(false)
+          ),
+          blockFilledColor: Array.from({ length: Constants.GRID_HEIGHT }, () =>
+            Array(Constants.GRID_WIDTH).fill("")
+          ),
+          promptRestart: false,
+        }
+      : { ...s }
+    : tick(s, action);
 
 const moveHorizontally = (pos: BlockPosition, direction: number) => {
-  return {...pos, xPos: pos.xPos + direction}
-}
+  return { ...pos, xPos: pos.xPos + direction };
+};
 
 const moveDown = (pos: BlockPosition) => {
-  return {...pos, yPos: pos.yPos + 1}
-}
+  return { ...pos, yPos: pos.yPos + 1 };
+};
 
 /**
  * Function to check if a position is a collision
@@ -91,7 +102,9 @@ const isCollision: (
     // Checks if the shape is at the bottom of the grid or
     pos.yPos >= Constants.GRID_HEIGHT ||
     // collides with a fixed block
-    blockFilledColor[pos.yPos >= 0 ? pos.yPos : 0][pos.xPos] !== "" && pos.xPos < Constants.GRID_WIDTH
+    (blockFilledColor[pos.yPos >= 0 ? pos.yPos : 0][pos.xPos] !== "" &&
+      pos.xPos < Constants.GRID_WIDTH) &&
+      pos.xPos >= 0
   );
 };
 
@@ -127,29 +140,34 @@ const tick = (s: State, randomShape: [number, number, number]) => {
     return {
       ...s,
       movingShape: newRotatedShape as Shape,
-      movingShapePosition: {xPos: safeXPos(randomX, newRotatedShape as Shape), yPos: 0},
-      nextShape: tetrisShapes[randomShapeIndex + 1 % tetrisShapes.length],
+      movingShapePosition: {
+        xPos: randomX,
+        yPos: 0,
+      },
+      nextShape: tetrisShapes[randomShapeIndex + (1 % tetrisShapes.length)],
     };
-    }
+  }
 
   // Check if the new block exceeds the top of the grid
   if (
     s.movingShapePosition.yPos === 0 &&
     s.movingShape?.positions.some(({ xPos: xShift, yPos: yShift }) => {
-      console.log(`Checking ${s.movingShapePosition.xPos + xShift}, ${s.movingShapePosition.yPos + yShift}`)
+      console.log(
+        `Checking ${s.movingShapePosition.xPos + xShift}, ${
+          s.movingShapePosition.yPos + yShift
+        }`
+      );
       return isCollision(
         {
           xPos: s.movingShapePosition.xPos + xShift,
           yPos: s.movingShapePosition.yPos + yShift,
         },
         s.blockFilledColor
-      )
-    }
-      
-    )
+      );
+    })
   ) {
     // Test
-    console.log("Game end triggered")
+    console.log("Game end triggered");
     return {
       ...s,
       gameEnd: true,
@@ -166,7 +184,6 @@ const tick = (s: State, randomShape: [number, number, number]) => {
       isCollision({ xPos: x + xPos, yPos: newY + yPos }, s.blockFilledColor)
     )
   ) {
-
     // Update the blockFilledColor array
     const newBlockFilledColor = s.movingShape.positions.reduce(
       (accBlockFilledColor, { xPos: xShift, yPos: yShift }) => {
@@ -203,7 +220,7 @@ const tick = (s: State, randomShape: [number, number, number]) => {
     );
     const rotations = Array.from({ length: randomShapeRotationIndex });
     const newShapePosition = {
-      xPos: safeXPos(randomX, tetrisShapes[randomShapeIndex]),
+      xPos: randomX,
       yPos: 0,
     };
     const newRotatedShape = rotations.reduce(
@@ -317,10 +334,10 @@ const rotateShape = (
     ...shape,
     positions: safeShapePositions(movingShapePosition, newPositions),
   } as Shape;
-};
+  };
 
-const safeXPos = (randomX: number, shape: Shape) => {
-  const maxSafeXPos = Constants.GRID_WIDTH - shape.widthFromCenterToEnd;
+  const safeXPos = (randomX: number, shape: Shape) => {
+    const maxSafeXPos = Constants.GRID_WIDTH - shape.widthFromCenterToEnd;
   const minSafeXPos = shape.widthFromCenterToStart;
 
   console.log("maxSafeXPos", maxSafeXPos);
@@ -343,8 +360,8 @@ const safeShapePositions: (
     ({ xPos: xShift }) =>
       movingShapePosition.xPos + xShift >= Constants.GRID_WIDTH
   );
-  if (isBeyondLeft) {
-    // Shift the shape to the right
+  if (isBeyondLeft) { 
+// Shift the shape to the right
     console.log("isBeyondLeft");
     return safeShapePositions(
       movingShapePosition,
@@ -359,5 +376,5 @@ const safeShapePositions: (
       positions.map(({ xPos, yPos }) => ({ xPos: xPos - 1, yPos }))
     );
   }
-  return positions;
+return positions;
 };

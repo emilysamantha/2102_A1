@@ -24,6 +24,7 @@ import {
   Move,
   Rotate,
   Restart,
+  GameOver,
 } from "./types";
 import { RNG } from "./util";
 import { initialState, reduceState, tick } from "./state";
@@ -129,6 +130,7 @@ function main() {
   const left$ = fromKey("KeyA").pipe(map(() => new Move(-1)));
   const right$ = fromKey("KeyD").pipe(map(() => new Move(1)));
   const rotate$ = fromKey("KeyS").pipe(map(() => new Rotate()));
+  const restart$ = fromKey("KeyR").pipe(map(() => new Restart()));
 
   const xRandom$ = createRngStreamFromSource(gameClock$)(new Date().getTime());
   const shapeIndexRandom$ = createRngStreamFromSource(gameClock$)(
@@ -138,8 +140,8 @@ function main() {
     new Date().getTime() + 2
   );
 
-  const restartSignal$ = new Subject();
-  const restart$ = restartSignal$.pipe(map(() => new Restart()));
+  const gameOverSignal$ = new Subject();
+  const gameOver$ = gameOverSignal$.pipe(map(() => new GameOver()));
 
   // Merge all streams
   const source$ = merge(
@@ -147,38 +149,31 @@ function main() {
     right$,
     rotate$,
     zip(xRandom$, shapeIndexRandom$, rotationIndexRandom$),
+    gameOver$,
     restart$
   )
     .pipe(scan(reduceState, initialState))
     .subscribe((s: State) => {
-      if (s.movingShape !== null) {
-        console.log("Rendering");
+      if (s.promptRestart) {
+        // Show the game over message and option to restart
+        showGameOver(svg);
+      }
+      else if (s.gameEnd) {
+        // Emit the game over signal
+        gameOverSignal$.next(0);
+      } 
+      else {
+        // Render the current state of the game
         render(s);
       }
-
-      if (s.gameEnd) {
-        // Test
-        console.log("Show game over called");
-
-        showGameOver(svg);
-
-        // // Emit the restart signal after the delay
-        restartSignal$.next(0);
-      
-      } else {
-        hide(gameover);
-      }
     });
-
-  const restartSubscription = restart$.subscribe((restart) => {
-    console.log("Restart signal received. Restarting the game...");
-    // Perform the restart logic using the restart instance
-    // Reset the game state, hide game over screen, etc.
-  });
-
-  restartSubscription.unsubscribe();
 }
 
+/**
+ * Function to create a random number stream from a given source.
+ * @param source$ the source observable
+ * @returns random number stream
+ */
 function createRngStreamFromSource<T>(source$: Observable<T>) {
   return function createRngStream(seed: number): Observable<number> {
     const randomNumberStream = source$.pipe(
