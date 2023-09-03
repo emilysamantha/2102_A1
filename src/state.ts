@@ -25,6 +25,7 @@ const initialState: State = {
   movingShape: null,
   movingShapePosition: { xPos: 4, yPos: 0 }, // Placeholder position
   nextShape: tetrisShapes[6], // Placeholder shape
+  nextShapePosition: { xPos: 0, yPos: 0 }, // Placeholder position
   blockFilledColor: Array.from({ length: Constants.GRID_HEIGHT }, () =>
     Array(Constants.GRID_WIDTH).fill("")
   ),
@@ -52,7 +53,7 @@ const reduceState: (
         movingShape: s.movingShape
           ? rotateShape(s.movingShapePosition, s.movingShape)
           : s.movingShape,
-              }
+      }
     : // Game Over
     action instanceof GameOver
     ? {
@@ -85,28 +86,33 @@ const tick = (s: State, randomShape: NewRandomShape) => {
     const randomShapeIndex = Math.floor(
       ((randomShape[1] + 1) / 2) * tetrisShapes.length
     );
+    const newShape = tetrisShapes[randomShapeIndex] as Shape;
     const randomShapeRotationIndex = Math.floor(
       ((randomShape[2] + 1) / 2) * 4 + 1
     );
     const rotations = Array.from({ length: randomShapeRotationIndex });
     const newShapePosition = {
-      // xPos: safeXPos(randomX, tetrisShapes[randomShapeIndex]),
-      xPos: randomX,
+      xPos: safeXPos(randomX, newShape),
+      // xPos: randomX,
       yPos: 0,
     };
     const newRotatedShape = rotations.reduce(
       (accShape, _) => rotateShape(newShapePosition, accShape as Shape),
-      tetrisShapes[randomShapeIndex] as Shape
+      newShape
     );
 
     return {
       ...s,
       movingShape: newRotatedShape as Shape,
       movingShapePosition: {
-        xPos: randomX,
+        xPos: safeXPos(randomX, newRotatedShape as Shape), 
         yPos: 0,
       },
       nextShape: tetrisShapes[randomShapeIndex + (1 % tetrisShapes.length)],
+      nextShapePosition: {
+        xPos: safeXPos(randomX - 1, newRotatedShape as Shape), 
+        yPos: 0,
+      },
     };
   }
 
@@ -159,25 +165,31 @@ const tick = (s: State, randomShape: NewRandomShape) => {
     const randomShapeIndex = Math.floor(
       ((randomShape[1] + 1) / 2) * tetrisShapes.length
     );
+    const newShape = tetrisShapes[randomShapeIndex] as Shape;
     const randomShapeRotationIndex = Math.floor(
       ((randomShape[2] + 1) / 2) * 4 + 1
     );
     const rotations = Array.from({ length: randomShapeRotationIndex });
     const newShapePosition = {
+      // xPos: safeXPos(randomX, newShape),
       xPos: randomX,
       yPos: 0,
     };
     const newRotatedShape = rotations.reduce(
       (accShape, _) => rotateShape(newShapePosition, accShape as Shape),
-      tetrisShapes[randomShapeIndex] as Shape
+      newShape
     );
 
     return handleFilledRows({
       ...s,
       blockFilledColor: newBlockFilledColor,
       movingShape: s.nextShape,
+      movingShapePosition: s.nextShapePosition,
       nextShape: newRotatedShape as Shape,
-      movingShapePosition: newShapePosition,
+      nextShapePosition: {
+        xPos: safeXPos(randomX, newRotatedShape as Shape),
+        yPos: 0,
+      },
     });
   }
 
@@ -276,6 +288,7 @@ const handleFilledRows = (s: State) => {
     highScore: newScore > s.highScore ? newScore : s.highScore,
     numLinesCleared: (s.numLinesCleared + newLinesCleared) % 10,
     level: newLevel,
+
     blockFilledColor: s.blockFilledColor.reduce(
       (acc, row, index) =>
         isRowFilled(row)
@@ -305,12 +318,12 @@ const rotateShape = (
   return {
     ...shape,
     positions: safeShapePositions(movingShapePosition, newPositions),
-      } as Shape;
+  } as Shape;
 };
 
 const safeXPos = (randomX: number, shape: Shape) => {
-  const maxSafeXPos = Constants.GRID_WIDTH - shape.widthFromCenterToEnd;
-  const minSafeXPos = shape.widthFromCenterToStart;
+  const maxSafeXPos = Constants.GRID_WIDTH - 1 - widthFromCenterToEnd(shape);
+  const minSafeXPos = widthFromCenterToStart(shape);
 
   console.log("maxSafeXPos", maxSafeXPos);
 
@@ -348,5 +361,15 @@ const safeShapePositions: (
       positions.map(({ xPos, yPos }) => ({ xPos: xPos - 1, yPos }))
     );
   }
-    return positions;
+  return positions;
+};
+
+const widthFromCenterToEnd = (shape: Shape): number => {
+  const maxX = shape.positions.reduce((max, pos) => Math.max(max, pos.xPos), 0);
+  return maxX;
+};
+
+const widthFromCenterToStart = (shape: Shape): number => {
+  const minX = shape.positions.reduce((min, pos) => Math.min(min, pos.xPos), 0);
+  return -minX; // Return the positive value
 };

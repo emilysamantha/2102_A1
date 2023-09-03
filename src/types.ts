@@ -162,6 +162,7 @@ type State = Readonly<{
   movingShape: Shape | null;
   movingShapePosition: BlockPosition;                   // To render the moving shape
   nextShape: Shape;                                     // To render the next shape
+  nextShapePosition: BlockPosition;                     // To render the next shape
   blockFilledColor: ReadonlyArray<ReadonlyArray<String>>; // To render the fixed blocks
   promptRestart: boolean;                               // To prompt the user to restart the game
 }>;
@@ -170,6 +171,7 @@ type Key = "KeyS" | "KeyA" | "KeyD" | "KeyR";
 type Event = "keydown" | "keyup" | "keypress";
 
 type NewRandomShape = [number, number, number]  // Index 0: random x, Index 1: random shape index, Index 2: random rotation index
+
 
 // Action Types
 class Move {
