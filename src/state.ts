@@ -5,6 +5,7 @@ import {
   Constants,
   GameOver,
   Move,
+  NewRandomShape,
   Restart,
   Rotate,
   Shape,
@@ -39,11 +40,11 @@ const initialState: State = {
  */
 const reduceState: (
   s: State,
-  action: Move | Rotate | GameOver | Restart | [number, number, number]
+  action: Move | Rotate | GameOver | Restart | NewRandomShape
 ) => State = (s, action) =>
+  // Move
   action instanceof Move
-    ? // Move
-      { ...s, movingShapePosition: moveShape(s, action.direction) }
+    ? { ...s, movingShapePosition: moveShape(s, action.direction) }
     : // Rotate
     action instanceof Rotate
     ? {
@@ -52,12 +53,14 @@ const reduceState: (
           ? rotateShape(s.movingShapePosition, s.movingShape)
           : s.movingShape,
       }
-    : action instanceof GameOver
+    : // Game Over
+    action instanceof GameOver
     ? {
         ...s,
         promptRestart: true,
       }
-    : action instanceof Restart
+    : // Restart
+    action instanceof Restart
     ? s.gameEnd
       ? {
           ...s,
@@ -77,7 +80,8 @@ const reduceState: (
           promptRestart: false,
         }
       : { ...s }
-    : tick(s, action);
+    : // Game tick
+      tick(s, action);
 
 const moveHorizontally = (pos: BlockPosition, direction: number) => {
   return { ...pos, xPos: pos.xPos + direction };
@@ -103,8 +107,8 @@ const isCollision: (
     pos.yPos >= Constants.GRID_HEIGHT ||
     // collides with a fixed block
     (blockFilledColor[pos.yPos >= 0 ? pos.yPos : 0][pos.xPos] !== "" &&
-      pos.xPos < Constants.GRID_WIDTH) &&
-      pos.xPos >= 0
+      pos.xPos < Constants.GRID_WIDTH &&
+      pos.xPos >= 0)
   );
 };
 
@@ -114,7 +118,7 @@ const isCollision: (
  * @param s Current state
  * @returns Updated state
  */
-const tick = (s: State, randomShape: [number, number, number]) => {
+const tick = (s: State, randomShape: NewRandomShape) => {
   // If the s.movingShape is null (start of the game), generate a new shape
   if (s.movingShape === null) {
     const randomX = Math.floor(
@@ -149,25 +153,7 @@ const tick = (s: State, randomShape: [number, number, number]) => {
   }
 
   // Check if the new block exceeds the top of the grid
-  if (
-    s.movingShapePosition.yPos === 0 &&
-    s.movingShape?.positions.some(({ xPos: xShift, yPos: yShift }) => {
-      console.log(
-        `Checking ${s.movingShapePosition.xPos + xShift}, ${
-          s.movingShapePosition.yPos + yShift
-        }`
-      );
-      return isCollision(
-        {
-          xPos: s.movingShapePosition.xPos + xShift,
-          yPos: s.movingShapePosition.yPos + yShift,
-        },
-        s.blockFilledColor
-      );
-    })
-  ) {
-    // Test
-    console.log("Game end triggered");
+  if (exceedsTop(s)) {
     return {
       ...s,
       gameEnd: true,
@@ -242,6 +228,22 @@ const tick = (s: State, randomShape: [number, number, number]) => {
     ...s,
     movingShapePosition: { ...s.movingShapePosition, yPos: newY },
   };
+};
+
+// Function to check if the new shape exceeds the top of the grid
+const exceedsTop = (s: State) => {
+  return (
+    s.movingShapePosition.yPos === 0 &&
+    s.movingShape?.positions.some(({ xPos: xShift, yPos: yShift }) => {
+      return isCollision(
+        {
+          xPos: s.movingShapePosition.xPos + xShift,
+          yPos: s.movingShapePosition.yPos + yShift,
+        },
+        s.blockFilledColor
+      );
+    })
+  );
 };
 
 // Function to move the moving shape left or right
@@ -334,10 +336,10 @@ const rotateShape = (
     ...shape,
     positions: safeShapePositions(movingShapePosition, newPositions),
   } as Shape;
-  };
+};
 
-  const safeXPos = (randomX: number, shape: Shape) => {
-    const maxSafeXPos = Constants.GRID_WIDTH - shape.widthFromCenterToEnd;
+const safeXPos = (randomX: number, shape: Shape) => {
+  const maxSafeXPos = Constants.GRID_WIDTH - shape.widthFromCenterToEnd;
   const minSafeXPos = shape.widthFromCenterToStart;
 
   console.log("maxSafeXPos", maxSafeXPos);
@@ -360,8 +362,8 @@ const safeShapePositions: (
     ({ xPos: xShift }) =>
       movingShapePosition.xPos + xShift >= Constants.GRID_WIDTH
   );
-  if (isBeyondLeft) { 
-// Shift the shape to the right
+  if (isBeyondLeft) {
+    // Shift the shape to the right
     console.log("isBeyondLeft");
     return safeShapePositions(
       movingShapePosition,
@@ -376,5 +378,5 @@ const safeShapePositions: (
       positions.map(({ xPos, yPos }) => ({ xPos: xPos - 1, yPos }))
     );
   }
-return positions;
+  return positions;
 };

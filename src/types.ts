@@ -1,5 +1,5 @@
 export {Viewport, Constants, Block, Move, Rotate, GameOver, Restart, tetrisShapes}
-export type {BlockPosition, State, Key, Event, Shape }
+export type {BlockPosition, State, Key, Event, Shape, NewRandomShape }
 
 // Constants
 const Viewport = {
@@ -168,6 +168,8 @@ type State = Readonly<{
 
 type Key = "KeyS" | "KeyA" | "KeyD" | "KeyR";
 type Event = "keydown" | "keyup" | "keypress";
+
+type NewRandomShape = [number, number, number]  // Index 0: random x, Index 1: random shape index, Index 2: random rotation index
 
 // Action Types
 class Move {
