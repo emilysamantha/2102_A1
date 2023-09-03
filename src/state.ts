@@ -52,7 +52,7 @@ const reduceState: (
         movingShape: s.movingShape
           ? rotateShape(s.movingShapePosition, s.movingShape)
           : s.movingShape,
-      }
+              }
     : // Game Over
     action instanceof GameOver
     ? {
@@ -63,54 +63,12 @@ const reduceState: (
     action instanceof Restart
     ? s.gameEnd
       ? {
-          ...s,
-          gameEnd: false,
-          currScore: 0,
-          level: 0,
-          numLinesCleared: 0,
-          movingShape: null, // null movingShape indicates the start of the game
-          movingShapePosition: { xPos: 4, yPos: 0 }, // placeholder position
-          nextShape: tetrisShapes[6], // placeholder shape
-          blockFilled: Array.from({ length: Constants.GRID_HEIGHT }, () =>
-            Array(Constants.GRID_WIDTH).fill(false)
-          ),
-          blockFilledColor: Array.from({ length: Constants.GRID_HEIGHT }, () =>
-            Array(Constants.GRID_WIDTH).fill("")
-          ),
-          promptRestart: false,
+          ...initialState,
+          highScore: s.highScore, // Keep the high score
         }
       : { ...s }
     : // Game tick
       tick(s, action);
-
-const moveHorizontally = (pos: BlockPosition, direction: number) => {
-  return { ...pos, xPos: pos.xPos + direction };
-};
-
-const moveDown = (pos: BlockPosition) => {
-  return { ...pos, yPos: pos.yPos + 1 };
-};
-
-/**
- * Function to check if a position is a collision
- *
- * @param pos the position to check
- * @param blockFilled 2D array of booleans representing the fixed blocks
- * @returns whether the position is a collision
- */
-const isCollision: (
-  pos: BlockPosition,
-  blockFilledColor: ReadonlyArray<ReadonlyArray<String>>
-) => Boolean = (pos, blockFilledColor) => {
-  return (
-    // Checks if the shape is at the bottom of the grid or
-    pos.yPos >= Constants.GRID_HEIGHT ||
-    // collides with a fixed block
-    (blockFilledColor[pos.yPos >= 0 ? pos.yPos : 0][pos.xPos] !== "" &&
-      pos.xPos < Constants.GRID_WIDTH &&
-      pos.xPos >= 0)
-  );
-};
 
 /**
  * Function which updates the state by proceeding with one time step.
@@ -230,19 +188,24 @@ const tick = (s: State, randomShape: NewRandomShape) => {
   };
 };
 
-// Function to check if the new shape exceeds the top of the grid
-const exceedsTop = (s: State) => {
+/**
+ * Function to check if a position is a collision
+ *
+ * @param pos the position to check
+ * @param blockFilled 2D array of booleans representing the fixed blocks
+ * @returns whether the position is a collision
+ */
+const isCollision: (
+  pos: BlockPosition,
+  blockFilledColor: ReadonlyArray<ReadonlyArray<String>>
+) => Boolean = (pos, blockFilledColor) => {
   return (
-    s.movingShapePosition.yPos === 0 &&
-    s.movingShape?.positions.some(({ xPos: xShift, yPos: yShift }) => {
-      return isCollision(
-        {
-          xPos: s.movingShapePosition.xPos + xShift,
-          yPos: s.movingShapePosition.yPos + yShift,
-        },
-        s.blockFilledColor
-      );
-    })
+    // Checks if the shape is at the bottom of the grid or
+    pos.yPos >= Constants.GRID_HEIGHT ||
+    // collides with a fixed block
+    (blockFilledColor[pos.yPos >= 0 ? pos.yPos : 0][pos.xPos] !== "" &&
+      pos.xPos < Constants.GRID_WIDTH &&
+      pos.xPos >= 0)
   );
 };
 
@@ -273,6 +236,22 @@ const moveShape = (s: State, moveAmount: number) => {
   };
 };
 
+// Function to check if the new shape exceeds the top of the grid
+const exceedsTop = (s: State) => {
+  return (
+    s.movingShapePosition.yPos === 0 &&
+    s.movingShape?.positions.some(({ xPos: xShift, yPos: yShift }) => {
+      return isCollision(
+        {
+          xPos: s.movingShapePosition.xPos + xShift,
+          yPos: s.movingShapePosition.yPos + yShift,
+        },
+        s.blockFilledColor
+      );
+    })
+  );
+};
+
 // Function to check if a row is filled
 const isRowFilled = (row: ReadonlyArray<String>) => {
   return row.filter((color) => color !== "").length === Constants.GRID_WIDTH;
@@ -297,15 +276,6 @@ const handleFilledRows = (s: State) => {
     highScore: newScore > s.highScore ? newScore : s.highScore,
     numLinesCleared: (s.numLinesCleared + newLinesCleared) % 10,
     level: newLevel,
-    // blockFilled: s.blockFilled.reduce(
-    //   (acc, row) =>
-    //     isRowFilled(row)
-    //       ? // Create a new row of false at the top of the grid, shifting the rest of the rows down
-    //         [Array.from({ length: Constants.GRID_WIDTH }, () => false), ...acc]
-    //       : // Keep the row as is
-    //         [...acc, row],
-    //   [] as ReadonlyArray<ReadonlyArray<Boolean>>
-    // ),
     blockFilledColor: s.blockFilledColor.reduce(
       (acc, row, index) =>
         isRowFilled(row)
@@ -335,7 +305,7 @@ const rotateShape = (
   return {
     ...shape,
     positions: safeShapePositions(movingShapePosition, newPositions),
-  } as Shape;
+      } as Shape;
 };
 
 const safeXPos = (randomX: number, shape: Shape) => {
@@ -378,5 +348,5 @@ const safeShapePositions: (
       positions.map(({ xPos, yPos }) => ({ xPos: xPos - 1, yPos }))
     );
   }
-  return positions;
+    return positions;
 };
