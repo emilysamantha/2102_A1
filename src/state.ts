@@ -76,7 +76,7 @@ const reduceState: (
     action instanceof SaveShape ? {
       ...s,
       savedShape: s.movingShape,
-      movingShape: s.savedShape ? s.savedShape : null
+      movingShape: s.savedShape
     } :
     // Check if the tick interval is divisible by the fall rate
     (s.intervalCounter % (Constants.FALL_RATE_MS - (s.level * Constants.SPEED_UP_MS) > 0 ? Constants.FALL_RATE_MS - (s.level * Constants.SPEED_UP_MS) : Constants.MIN_FALL_RATE_MS))  === 0
