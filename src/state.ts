@@ -8,6 +8,7 @@ import {
   NewRandomShape,
   Restart,
   Rotate,
+  SaveShape,
   Shape,
   State,
   tetrisShapes,
@@ -31,6 +32,7 @@ const initialState: State = {
   ),
   promptRestart: false,
   intervalCounter: Constants.TICK_RATE_MS,
+  savedShape: null,
 } as const;
 
 /**
@@ -42,7 +44,7 @@ const initialState: State = {
  */
 const reduceState: (
   s: State,
-  action: Move | Rotate | GameOver | Restart | NewRandomShape
+  action: Move | Rotate | GameOver | Restart | SaveShape | NewRandomShape
 ) => State = (s, action) =>
   // Move
   action instanceof Move
@@ -70,6 +72,12 @@ const reduceState: (
         }
       : { ...s }
     : 
+    // Save Shape
+    action instanceof SaveShape ? {
+      ...s,
+      savedShape: s.movingShape,
+      movingShape: s.savedShape ? s.savedShape : null
+    } :
     // Check if the tick interval is divisible by the fall rate
     (s.intervalCounter % (Constants.FALL_RATE_MS - (s.level * Constants.SPEED_UP_MS) > 0 ? Constants.FALL_RATE_MS - (s.level * Constants.SPEED_UP_MS) : Constants.MIN_FALL_RATE_MS))  === 0
     ? // Game tick

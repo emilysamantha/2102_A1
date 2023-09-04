@@ -14,7 +14,7 @@
 
 import "./style.css";
 import { fromEvent, interval, merge, Observable, Subject, zip } from "rxjs";
-import { map, filter, scan, distinctUntilChanged, delay } from "rxjs/operators";
+import { map, filter, scan } from "rxjs/operators";
 import {
   Constants,
   Viewport,
@@ -25,10 +25,11 @@ import {
   Rotate,
   Restart,
   GameOver,
+  SaveShape,
 } from "./types";
 import { RNG } from "./util";
-import { initialState, reduceState, tick } from "./state";
-import { createSvgElement, hide, show, showGameOver } from "./view";
+import { initialState, reduceState } from "./state";
+import { createSvgElement, showGameOver } from "./view";
 
 /**
  * This is the function called on page load. Your main game loop
@@ -40,6 +41,9 @@ function main() {
     HTMLElement;
   const preview = document.querySelector("#svgPreview") as SVGGraphicsElement &
     HTMLElement;
+  const savedShape = document.querySelector(
+    "#svgSavedShape"
+  ) as SVGGraphicsElement & HTMLElement;
   const gameover = document.querySelector("#gameOver") as SVGGraphicsElement &
     HTMLElement;
   const container = document.querySelector("#main") as HTMLElement;
@@ -48,6 +52,8 @@ function main() {
   svg.setAttribute("width", `${Viewport.CANVAS_WIDTH}`);
   preview.setAttribute("height", `${Viewport.PREVIEW_HEIGHT}`);
   preview.setAttribute("width", `${Viewport.PREVIEW_WIDTH}`);
+  savedShape.setAttribute("height", `${Viewport.PREVIEW_HEIGHT}`);
+  savedShape.setAttribute("width", `${Viewport.PREVIEW_WIDTH}`);
 
   // Text fields
   const levelText = document.querySelector("#levelText") as HTMLElement;
@@ -67,6 +73,9 @@ function main() {
 
     // Reset the preview canvas
     preview.innerHTML = "";
+
+    // Reset the saved shape canvas
+    savedShape.innerHTML = "";
 
     // Update the level
     levelText.innerHTML = `${s.level}`;
@@ -114,11 +123,24 @@ function main() {
         height: `${Block.HEIGHT}`,
         width: `${Block.WIDTH}`,
         x: `${Block.WIDTH * (3 + xPos)}`,
-        y: `${Block.HEIGHT * (1 + yPos)}`,
+        y: `${Block.HEIGHT * (2 + yPos)}`,
         style: `fill: ${s.nextShape.color}`,
       });
       preview.appendChild(block);
     });
+
+    // Render the saved shape in the saved shape canvas
+    s.savedShape?.positions.forEach((pos) => {
+      const { xPos, yPos } = pos;
+      const block = createSvgElement(savedShape.namespaceURI, "rect", {
+        height: `${Block.HEIGHT}`,
+        width: `${Block.WIDTH}`,
+        x: `${Block.WIDTH * (3 + xPos)}`,
+        y: `${Block.HEIGHT * (2 + yPos)}`,
+        style: `fill: ${s.savedShape?.color}`,
+      });
+      savedShape.appendChild(block);
+    })
   };
 
   // Observable streams
@@ -131,6 +153,7 @@ function main() {
   const right$ = fromKey("KeyD").pipe(map(() => new Move(1)));
   const rotate$ = fromKey("KeyS").pipe(map(() => new Rotate()));
   const restart$ = fromKey("KeyR").pipe(map(() => new Restart()));
+  const saveShape$ = fromKey("KeyW").pipe(map(() => new SaveShape()));
 
   const xRandom$ = createRngStreamFromSource(gameClock$)(new Date().getTime());
   const shapeIndexRandom$ = createRngStreamFromSource(gameClock$)(
@@ -150,19 +173,18 @@ function main() {
     rotate$,
     zip(xRandom$, shapeIndexRandom$, rotationIndexRandom$),
     gameOver$,
-    restart$
+    restart$,
+    saveShape$
   )
     .pipe(scan(reduceState, initialState))
     .subscribe((s: State) => {
       if (s.promptRestart) {
         // Show the game over message and option to restart
         showGameOver(svg);
-      }
-      else if (s.gameEnd) {
+      } else if (s.gameEnd) {
         // Emit the game over signal
         gameOverSignal$.next(0);
-      } 
-      else {
+      } else {
         // Render the current state of the game
         render(s);
       }

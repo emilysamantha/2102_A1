@@ -1,4 +1,4 @@
-export {Viewport, Constants, Block, Move, Rotate, GameOver, Restart, tetrisShapes}
+export {Viewport, Constants, Block, Move, Rotate, GameOver, Restart, SaveShape, tetrisShapes}
 export type {BlockPosition, State, Key, Event, Shape, NewRandomShape }
 
 // Constants
@@ -6,7 +6,7 @@ const Viewport = {
   CANVAS_WIDTH: 200,
   CANVAS_HEIGHT: 400,
   PREVIEW_WIDTH: 160,
-  PREVIEW_HEIGHT: 80,
+  PREVIEW_HEIGHT: 100,
 } as const;
 
 const Constants = {
@@ -153,9 +153,10 @@ type State = Readonly<{
   blockFilledColor: ReadonlyArray<ReadonlyArray<String>>; // To render the fixed blocks
   promptRestart: boolean;                               // To prompt the user to restart the game
   intervalCounter: number;                              // To keep track of the interval
+  savedShape: Shape | null;                             // To save the shape
 }>;
 
-type Key = "KeyS" | "KeyA" | "KeyD" | "KeyR";
+type Key = "KeyS" | "KeyA" | "KeyD" | "KeyR" | "KeyW";
 type Event = "keydown" | "keyup" | "keypress";
 
 type NewRandomShape = [number, number, number]  // Index 0: random x, Index 1: random shape index, Index 2: random rotation index
@@ -175,5 +176,9 @@ class GameOver {
 }
 
 class Restart {
+  constructor() {}
+}
+
+class SaveShape {
   constructor() {}
 }
