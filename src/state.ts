@@ -20,7 +20,7 @@ const initialState: State = {
   gameEnd: false,
   currScore: 0,
   highScore: 0,
-  level: 0,
+  level: 1,
   numLinesCleared: 0,
   movingShape: null,
   movingShapePosition: { xPos: 4, yPos: 0 }, // Placeholder position
@@ -30,6 +30,7 @@ const initialState: State = {
     Array(Constants.GRID_WIDTH).fill("")
   ),
   promptRestart: false,
+  intervalCounter: Constants.TICK_RATE_MS,
 } as const;
 
 /**
@@ -68,8 +69,16 @@ const reduceState: (
           highScore: s.highScore, // Keep the high score
         }
       : { ...s }
-    : // Game tick
-      tick(s, action);
+    : 
+    // Check if the tick interval is divisible by the fall rate
+    (s.intervalCounter % (Constants.FALL_RATE_MS - (s.level * Constants.SPEED_UP_MS) > 0 ? Constants.FALL_RATE_MS - (s.level * Constants.SPEED_UP_MS) : Constants.MIN_FALL_RATE_MS))  === 0
+    ? // Game tick
+      tick(s, action)
+    : // Wait until the tick interval is divisible by the fall rate
+    {
+      ...s,
+      intervalCounter: s.intervalCounter + Constants.TICK_RATE_MS,
+    }
 
 /**
  * Function which updates the state by proceeding with one time step.
@@ -93,7 +102,6 @@ const tick = (s: State, randomShape: NewRandomShape) => {
     const rotations = Array.from({ length: randomShapeRotationIndex });
     const newShapePosition = {
       xPos: safeXPos(randomX, newShape),
-      // xPos: randomX,
       yPos: 0,
     };
     const newRotatedShape = rotations.reduce(
@@ -105,14 +113,15 @@ const tick = (s: State, randomShape: NewRandomShape) => {
       ...s,
       movingShape: newRotatedShape as Shape,
       movingShapePosition: {
-        xPos: safeXPos(randomX, newRotatedShape as Shape), 
+        xPos: safeXPos(randomX, newRotatedShape as Shape),
         yPos: 0,
       },
       nextShape: tetrisShapes[randomShapeIndex + (1 % tetrisShapes.length)],
       nextShapePosition: {
-        xPos: safeXPos(randomX - 1, newRotatedShape as Shape), 
+        xPos: safeXPos(randomX - 1, newRotatedShape as Shape),
         yPos: 0,
       },
+      intervalCounter: Constants.TICK_RATE_MS, // Reset the interval counter
     };
   }
 
@@ -171,7 +180,6 @@ const tick = (s: State, randomShape: NewRandomShape) => {
     );
     const rotations = Array.from({ length: randomShapeRotationIndex });
     const newShapePosition = {
-      // xPos: safeXPos(randomX, newShape),
       xPos: randomX,
       yPos: 0,
     };
@@ -190,6 +198,7 @@ const tick = (s: State, randomShape: NewRandomShape) => {
         xPos: safeXPos(randomX, newRotatedShape as Shape),
         yPos: 0,
       },
+      intervalCounter: Constants.TICK_RATE_MS, // Reset the interval counter
     });
   }
 
@@ -197,6 +206,7 @@ const tick = (s: State, randomShape: NewRandomShape) => {
   return {
     ...s,
     movingShapePosition: { ...s.movingShapePosition, yPos: newY },
+    intervalCounter: Constants.TICK_RATE_MS, // Reset the interval counter
   };
 };
 
@@ -279,7 +289,7 @@ const handleFilledRows = (s: State) => {
   const newScore = s.currScore + addedScore;
 
   const newLinesCleared = addedScore / Constants.GRID_WIDTH;
-  const addedLevel = Math.floor(newScore / Constants.LEVEL_UP_POINTS) - s.level;
+  const addedLevel = Math.floor(newScore / Constants.LEVEL_UP_POINTS) - s.level + 1;
   const newLevel = s.level + addedLevel;
 
   return {
@@ -288,7 +298,6 @@ const handleFilledRows = (s: State) => {
     highScore: newScore > s.highScore ? newScore : s.highScore,
     numLinesCleared: (s.numLinesCleared + newLinesCleared) % 10,
     level: newLevel,
-
     blockFilledColor: s.blockFilledColor.reduce(
       (acc, row, index) =>
         isRowFilled(row)
@@ -324,8 +333,6 @@ const rotateShape = (
 const safeXPos = (randomX: number, shape: Shape) => {
   const maxSafeXPos = Constants.GRID_WIDTH - 1 - widthFromCenterToEnd(shape);
   const minSafeXPos = widthFromCenterToStart(shape);
-
-  console.log("maxSafeXPos", maxSafeXPos);
 
   return randomX >= minSafeXPos
     ? randomX <= maxSafeXPos

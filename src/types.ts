@@ -10,10 +10,13 @@ const Viewport = {
 } as const;
 
 const Constants = {
-  TICK_RATE_MS: 200,
+  TICK_RATE_MS: 10,
   GRID_WIDTH: 10,
   GRID_HEIGHT: 20,
-  LEVEL_UP_POINTS: 50,
+  LEVEL_UP_POINTS: 20,
+  FALL_RATE_MS: 500,
+  SPEED_UP_MS: 50,
+  MIN_FALL_RATE_MS: 100,
 } as const;
 
 const Block = {
@@ -27,8 +30,6 @@ type BlockPosition = Readonly<{ xPos: number; yPos: number }>;
 type Shape = Readonly<{
   positions: ReadonlyArray<BlockPosition>;
   color: string;
-  widthFromCenterToEnd: number;
-  widthFromCenterToStart: number;
   excludeRotation?: boolean;    // To exclude rotation for the square block
 }>
 
@@ -44,8 +45,6 @@ const tetrisShapes: Shape[] = [
       { xPos: 1, yPos: 0 },
       { xPos: 2, yPos: 0 },
     ],
-    widthFromCenterToEnd: 2,
-    widthFromCenterToStart: 2,
     color: "cyan",
   } as Shape,
   {
@@ -62,8 +61,6 @@ const tetrisShapes: Shape[] = [
       { xPos: 1, yPos: 1 },
     ],
     color: "yellow",
-    widthFromCenterToEnd: 1,
-    widthFromCenterToStart: 1,
     excludeRotation: true, // Mark the square block to exclude rotation
   } as Shape,
   {
@@ -79,8 +76,6 @@ const tetrisShapes: Shape[] = [
       { xPos: 0, yPos: 0 }, // Center
       { xPos: 1, yPos: 0 },
     ],
-    widthFromCenterToEnd: 1,
-    widthFromCenterToStart: 1,
     color: "blue"
   } as Shape,
   {
@@ -96,8 +91,6 @@ const tetrisShapes: Shape[] = [
       { xPos: 0, yPos: 0 },   // Center
       { xPos: 1, yPos: 0 },
     ],
-    widthFromCenterToEnd: 1,
-    widthFromCenterToStart: 1,
     color: "orange"
   } as Shape,
   {
@@ -113,8 +106,6 @@ const tetrisShapes: Shape[] = [
       { xPos: -1, yPos: 1 },
       { xPos: 0, yPos: 1 },
     ],
-    widthFromCenterToEnd: 1,
-    widthFromCenterToStart: 1,
     color: "green"
   } as Shape,
   {
@@ -130,8 +121,6 @@ const tetrisShapes: Shape[] = [
       { xPos: 0, yPos: 1 },
       { xPos: 1, yPos: 1 },
     ],
-    widthFromCenterToEnd: 1,
-    widthFromCenterToStart: 1,
     color: "red"
   } as Shape,
   {
@@ -147,8 +136,6 @@ const tetrisShapes: Shape[] = [
       { xPos: 0, yPos: 0 },
       { xPos: 0, yPos: 1 },
     ],
-    widthFromCenterToEnd: 1,
-    widthFromCenterToStart: 1,
     color: "purple"
   } 
 ];
@@ -165,6 +152,7 @@ type State = Readonly<{
   nextShapePosition: BlockPosition;                     // To render the next shape
   blockFilledColor: ReadonlyArray<ReadonlyArray<String>>; // To render the fixed blocks
   promptRestart: boolean;                               // To prompt the user to restart the game
+  intervalCounter: number;                              // To keep track of the interval
 }>;
 
 type Key = "KeyS" | "KeyA" | "KeyD" | "KeyR";
