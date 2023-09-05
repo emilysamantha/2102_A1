@@ -13,10 +13,10 @@ const Constants = {
   TICK_RATE_MS: 10,
   GRID_WIDTH: 10,
   GRID_HEIGHT: 20,
-  LEVEL_UP_POINTS: 20,
-  FALL_RATE_MS: 500,
-  SPEED_UP_MS: 50,
-  MIN_FALL_RATE_MS: 100,
+  LEVEL_UP_POINTS: 20,    // Level up after 2 rows are cleared, adjust this to change the level up points
+  FALL_RATE_MS: 500,      // The shape falls every 500ms, adjust this to change the fall rate
+  SPEED_UP_MS: 50,        // Each level up, the fall rate decreases by 50ms, adjust this to change the speed up rate
+  MIN_FALL_RATE_MS: 100,  // The minimum fall rate is 100ms, adjust this to change the minimum fall rate
 } as const;
 
 const Block = {

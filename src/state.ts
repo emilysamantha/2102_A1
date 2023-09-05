@@ -79,6 +79,7 @@ const reduceState: (
       movingShape: s.savedShape
     } :
     // Check if the tick interval is divisible by the fall rate
+    // This controls the speed of the moving shape based on the level
     (s.intervalCounter % (Constants.FALL_RATE_MS - (s.level * Constants.SPEED_UP_MS) > 0 ? Constants.FALL_RATE_MS - (s.level * Constants.SPEED_UP_MS) : Constants.MIN_FALL_RATE_MS))  === 0
     ? // Game tick
       tick(s, action)
@@ -239,7 +240,12 @@ const isCollision: (
   );
 };
 
-// Function to move the moving shape left or right
+/**
+ * Function to move the moving shape left or right
+ * @param s the current state
+ * @param moveAmount the amount to move the shape by
+ * @returns the updated state with the shape moved
+ */
 const moveShape = (s: State, moveAmount: number) => {
   return {
     ...s.movingShapePosition,
@@ -266,7 +272,11 @@ const moveShape = (s: State, moveAmount: number) => {
   };
 };
 
-// Function to check if the new shape exceeds the top of the grid
+/**
+ * Function to check if the new shape exceeds the top of the grid
+ * @param s the current state
+ * @returns whether the new shape exceeds the top of the grid
+ */
 const exceedsTop = (s: State) => {
   return (
     s.movingShapePosition.yPos === 0 &&
@@ -282,12 +292,20 @@ const exceedsTop = (s: State) => {
   );
 };
 
-// Function to check if a row is filled
+/**
+ * Function to check if a row is filled
+ * @param row the row to check
+ * @returns whether the row is filled
+ */
 const isRowFilled = (row: ReadonlyArray<String>) => {
   return row.filter((color) => color !== "").length === Constants.GRID_WIDTH;
 };
 
-// Function to handle filled rows
+/**
+ * Function to handle filled rows
+ * @param s the current state
+ * @returns the updated state with filled rows removed and score and level updated
+ */
 const handleFilledRows = (s: State) => {
   // Return the state with filled rows removed from the blockFilled array
   const addedScore = s.blockFilledColor.reduce(
@@ -318,7 +336,12 @@ const handleFilledRows = (s: State) => {
   };
 };
 
-// Function to rotate the moving shape
+/**
+ * Function to rotate the moving shape
+ * @param movingShapePosition the position of the moving shape
+ * @param shape the shape to rotate
+ * @returns the updated shape
+ */
 const rotateShape = (
   movingShapePosition: BlockPosition,
   shape: Shape
@@ -338,6 +361,12 @@ const rotateShape = (
   } as Shape;
 };
 
+/**
+ * Function to ensure that the random x position for the shape is within the grid
+ * @param randomX the random x position to check
+ * @param shape the shape to check
+ * @returns the safe x position for the shape
+ */
 const safeXPos = (randomX: number, shape: Shape) => {
   const maxSafeXPos = Constants.GRID_WIDTH - 1 - widthFromCenterToEnd(shape);
   const minSafeXPos = widthFromCenterToStart(shape);
@@ -349,6 +378,12 @@ const safeXPos = (randomX: number, shape: Shape) => {
     : minSafeXPos;
 };
 
+/**
+ * Function to ensure that the shape is within the grid
+ * @param movingShapePosition the position of the moving shape
+ * @param positions the block positions of the shape
+ * @returns 
+ */
 const safeShapePositions: (
   movingShapePosition: BlockPosition,
   positions: ReadonlyArray<BlockPosition>
@@ -362,14 +397,12 @@ const safeShapePositions: (
   );
   if (isBeyondLeft) {
     // Shift the shape to the right
-    console.log("isBeyondLeft");
     return safeShapePositions(
       movingShapePosition,
       positions.map(({ xPos, yPos }) => ({ xPos: xPos + 1, yPos }))
     );
   }
-  if (isBeyondRight) {
-    console.log("isBeyondRight");
+  else if (isBeyondRight) {
     // Shift the shape to the left
     return safeShapePositions(
       movingShapePosition,
@@ -379,11 +412,21 @@ const safeShapePositions: (
   return positions;
 };
 
+/**
+ * Function to calculate the width of the shape from the center to the end
+ * @param shape the shape to check
+ * @returns the width of the shape from the center to the end
+ */
 const widthFromCenterToEnd = (shape: Shape): number => {
   const maxX = shape.positions.reduce((max, pos) => Math.max(max, pos.xPos), 0);
   return maxX;
 };
 
+/**
+ * Function to calculate the width of the shape from the center to the start
+ * @param shape the shape to check
+ * @returns the width of the shape from the center to the start
+ */
 const widthFromCenterToStart = (shape: Shape): number => {
   const minX = shape.positions.reduce((min, pos) => Math.min(min, pos.xPos), 0);
   return -minX; // Return the positive value
