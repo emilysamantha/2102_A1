@@ -15,7 +15,7 @@ export const hide = (elem: SVGGraphicsElement) =>
   elem.setAttribute("visibility", "hidden");
 /**
  * Creates an SVG element with the given properties.
- *
+ * 
  * See https://developer.mozilla.org/en-US/docs/Web/SVG/Element for valid
  * element names and properties.
  *

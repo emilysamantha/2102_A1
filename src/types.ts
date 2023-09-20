@@ -6,7 +6,7 @@ const Viewport = {
   CANVAS_WIDTH: 200,
   CANVAS_HEIGHT: 400,
   PREVIEW_WIDTH: 160,
-  PREVIEW_HEIGHT: 100,
+  PREVIEW_HEIGHT: 100, 
 } as const;
 
 const Constants = {

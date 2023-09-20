@@ -391,7 +391,7 @@ const safeShapePositions: (
   const isBeyondLeft = positions.some(
     ({ xPos: xShift }) => movingShapePosition.xPos + xShift < 0
   );
-  const isBeyondRight = positions.some(
+  const isBeyondRight = positions.some( 
     ({ xPos: xShift }) =>
       movingShapePosition.xPos + xShift >= Constants.GRID_WIDTH
   );

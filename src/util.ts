@@ -6,7 +6,7 @@
  */
 export abstract class RNG {
   // LCG using GCC's constants
-  private static m = 2147483648; // 2**31
+  private static m = 2147483648; // 2**31 
   private static a = 1103515245;
   private static c = 12345;
 
